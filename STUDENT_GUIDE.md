@@ -1,5 +1,7 @@
 # Mean-Variance Optimization: Student Guide
 
+Live site: https://dkann01.github.io/mv-dashboard/
+
 The dashboard is built around one lesson: **mean-variance optimization is an estimation-error maximizer.** It takes J.P. Morgan's published 2026 Long-Term Capital Market Assumptions — real, carefully produced forecasts — and shows the optimizer concentrating the portfolio in whichever classes happen to carry the most favorable forecast error.
 
 Each tab answers one question and maps to the Revisiting Asset Allocation lecture and the Idzorek paper.
