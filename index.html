@@ -2138,7 +2138,14 @@ $("#err-all").oninput = e => {
 };
 $("#err-random").onclick = () => {
   newErrorPattern();
-  applyGlobalShock(+$("#err-all").value / 100);
+  // A new pattern at zero magnitude would change nothing, so step the slider
+  // up to one standard error the first time.
+  const slider = $("#err-all");
+  if (+slider.value === 0) {
+    slider.value = 100;
+    $("#err-all-label").textContent = "1.00 SE";
+  }
+  applyGlobalShock(+slider.value / 100);
   renderSoon();
 };
 $("#err-reset").onclick = () => {
