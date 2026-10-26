@@ -937,13 +937,17 @@ function drawFrontier(host, specs, opts) {
     margin: { t: 14, r: 18, b: 40, l: 54 }
   });
 
-  // Capital allocation line through the tangency portfolio.
+  // Capital allocation line through the tangency portfolio, stopped wherever
+  // it leaves the plot area so it never draws over the surrounding text.
   if (o.cal && o.rf != null) {
     const sl = (o.cal.ret - o.rf) / o.cal.sd;
-    c.add(svg("line", {
-      x1: c.X(0), y1: c.Y(o.rf), x2: c.X(c.xd[1]), y2: c.Y(o.rf + sl * c.xd[1]),
-      stroke: "var(--muted)", "stroke-width": 1, "stroke-dasharray": "5,4", opacity: .8
-    }));
+    const xEnd = sl > 0 ? Math.min(c.xd[1], (c.yd[1] - o.rf) / sl) : c.xd[1];
+    if (xEnd > 0) {
+      c.add(svg("line", {
+        x1: c.X(0), y1: c.Y(o.rf), x2: c.X(xEnd), y2: c.Y(o.rf + sl * xEnd),
+        stroke: "var(--muted)", "stroke-width": 1, "stroke-dasharray": "5,4", opacity: .8
+      }));
+    }
   }
 
   for (const s of specs) {
