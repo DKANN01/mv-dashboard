@@ -1,0 +1,2243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mean-Variance Optimization &mdash; Interactive Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f4; --ink:#10151d; --card:#ffffff; --border:#d7dde4; --muted:#5b6572;
+    --accent:#1c5cab; --accent-soft:#e4edf9;
+    --pos:#1c5cab; --neg:#c0362c; --warn:#9a6b11;
+  }
+  [data-theme="dark"]{
+    --bg:#12161c; --ink:#f2f4f7; --card:#1a2029; --border:#2a323d; --muted:#9aa4b2;
+    --accent:#74aeef; --accent-soft:#1f2b3a;
+    --pos:#74aeef; --neg:#e5726a; --warn:#d9ae5c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:"IBM Plex Sans",-apple-system,Segoe UI,sans-serif; line-height:1.5;}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 20px;}
+  h1,h2,h3,.brand-name{font-family:"Newsreader",Georgia,serif;}
+  a{color:var(--accent);}
+
+  .site-header{border-bottom:1px solid var(--border); padding:14px 0;}
+  .site-header .wrap{display:flex; align-items:center; justify-content:space-between;}
+  .brand-name{font-size:1.15rem; font-weight:600;}
+  .brand-tag{display:block; font-size:.78rem; color:var(--muted); font-family:"IBM Plex Sans",sans-serif;}
+  #theme-toggle{background:none; border:1px solid var(--border); color:var(--ink); border-radius:6px; padding:6px 10px; cursor:pointer; font-size:.95rem;}
+
+  main{padding-bottom:60px;}
+  .intro{padding:28px 0 6px;}
+  .intro h1{font-size:1.85rem; margin:0 0 8px;}
+  .lede{color:var(--muted); max-width:74ch; font-size:.95rem;}
+
+  .controls{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px; margin:20px 0 0;}
+  .ctl-row{display:flex; flex-wrap:wrap; gap:18px; align-items:flex-end;}
+  .ctl{display:flex; flex-direction:column; gap:3px; font-size:.76rem; color:var(--muted);}
+  .ctl select,.ctl input[type=number]{background:var(--bg); color:var(--ink); border:1px solid var(--border); border-radius:6px; padding:5px 7px; font-size:.82rem; font-family:inherit;}
+  .ctl.slider{min-width:220px;}
+  .ctl.slider input[type=range]{accent-color:var(--accent); cursor:pointer; width:100%;}
+  .ctl strong{color:var(--ink); font-weight:600;}
+  .chk{display:flex; align-items:flex-start; gap:7px; font-size:.78rem; color:var(--muted); cursor:pointer;}
+  .chk input{margin-top:3px; accent-color:var(--accent); cursor:pointer;}
+  .btn{background:none; border:1px solid var(--border); color:var(--ink); border-radius:6px; padding:5px 10px; cursor:pointer; font-family:inherit; font-size:.78rem;}
+  .btn:hover{border-color:var(--accent); color:var(--accent);}
+  .btn.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .btn.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600;}
+
+  details.universe{margin-top:12px; border-top:1px solid var(--border); padding-top:10px;}
+  details.universe summary{font-size:.8rem; cursor:pointer; color:var(--accent);}
+  .uni-groups{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-top:10px;}
+  .uni-group .gtitle{font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 5px; display:flex; justify-content:space-between; align-items:center;}
+  .uni-group .gtitle button{font-size:.66rem; padding:1px 5px;}
+  .uni-item{display:flex; align-items:center; gap:6px; font-size:.78rem; cursor:pointer; user-select:none; padding:1px 0;}
+  .uni-item input{accent-color:var(--accent);}
+  .uni-item .nums{margin-left:auto; color:var(--muted); font-size:.72rem; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .swatch{width:10px; height:10px; border-radius:2px; display:inline-block; flex:none;}
+
+  .tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:16px 0;}
+  .tile{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
+  .tile .k{font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; line-height:1.3; min-height:2.6em;}
+  .tile .v{font-size:1.15rem; font-weight:600; margin-top:2px;}
+  .tile .sub{font-size:.72rem; color:var(--muted); margin-top:4px;}
+
+  .tabs{display:flex; gap:6px; margin:22px 0 14px; border-bottom:1px solid var(--border); flex-wrap:wrap;}
+  .tab{background:none; border:none; padding:8px 14px; font-size:.88rem; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; font-family:inherit;}
+  .tab.active{color:var(--accent); border-bottom-color:var(--accent); font-weight:600;}
+
+  .panel.hidden{display:none;}
+  [hidden]{display:none !important;}
+  .panel h2{font-size:1.05rem; margin:20px 0 8px;}
+  .panel h2:first-child{margin-top:4px;}
+  .panel h3{font-size:.92rem; margin:14px 0 6px;}
+
+  .chart{width:100%; height:300px; background:var(--card); border:1px solid var(--border); border-radius:10px; position:relative;}
+  .chart svg{display:block; overflow:visible;}
+  .axis-label{font-size:9px; fill:var(--muted);}
+  .axis-title{font-size:10px; fill:var(--muted);}
+  .gridline{stroke:var(--border); stroke-width:1;}
+  .series-path{fill:none; stroke-width:1.8;}
+  .tooltip{position:absolute; pointer-events:none; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:.72rem; box-shadow:0 4px 12px rgba(0,0,0,.14); display:none; z-index:5; white-space:nowrap; max-width:280px;}
+  .tooltip .tt-date{font-weight:600; margin-bottom:3px;}
+  .tooltip .tt-row{display:flex; align-items:center; gap:5px;}
+  .cap{font-size:.76rem; color:var(--muted); margin:8px 0 0; max-width:88ch;}
+  .warn{color:var(--warn); font-size:.78rem; margin:8px 0 0;}
+
+  table.dt{border-collapse:collapse; width:100%; font-size:.76rem; font-variant-numeric:tabular-nums;}
+  table.dt th,table.dt td{border:1px solid var(--border); padding:5px 7px; text-align:right;}
+  table.dt th{background:var(--card); font-weight:600; text-align:right;}
+  table.dt th:first-child,table.dt td:first-child{text-align:left;}
+  table.dt td.name{display:flex; align-items:center; gap:6px;}
+  table.dt tr.hi td{background:var(--accent-soft);}
+  .tbl-scroll{overflow-x:auto;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid-side{display:grid; grid-template-columns:260px 1fr; gap:16px; align-items:start;}
+  .side{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:10px; font-size:.76rem; color:var(--muted);}
+  .side label{display:flex; flex-direction:column; gap:3px;}
+  .side label.chk{flex-direction:row;}
+  .side input[type=number],.side select{background:var(--bg); color:var(--ink); border:1px solid var(--border); border-radius:6px; padding:4px 6px; font-size:.78rem; font-family:inherit; width:100%;}
+  .side input[type=range]{accent-color:var(--accent); width:100%; cursor:pointer;}
+  .side hr{border:none; border-top:1px solid var(--border); width:100%; margin:2px 0;}
+  .side strong{color:var(--ink);}
+  @media (max-width:800px){ .grid2,.grid-side{grid-template-columns:1fr;} }
+
+  .shock-list{max-height:320px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; background:var(--card);}
+  .shock-row{display:grid; grid-template-columns:1fr 90px 120px 56px; gap:8px; align-items:center; padding:5px 9px; font-size:.76rem; border-bottom:1px solid var(--border);}
+  .shock-row:last-child{border-bottom:none;}
+  .shock-row input[type=range]{accent-color:var(--accent); cursor:pointer; width:100%;}
+  .shock-row .mu{font-variant-numeric:tabular-nums; color:var(--muted); text-align:right;}
+  .shock-row .se{font-variant-numeric:tabular-nums; text-align:right; font-weight:600;}
+
+  .views-list{display:flex; flex-direction:column; gap:8px;}
+  .view-row{display:grid; grid-template-columns:1fr 78px 1fr 28px; gap:8px; align-items:center; font-size:.74rem; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:7px 9px;}
+  .view-row select,.view-row input[type=number]{background:var(--bg); color:var(--ink); border:1px solid var(--border); border-radius:6px; padding:3px 5px; font-size:.76rem; font-family:inherit; width:100%;}
+  .view-row input[type=range]{accent-color:var(--accent); width:100%;}
+  .view-row .x{background:none; border:none; color:var(--neg); cursor:pointer; font-size:1rem;}
+
+  .pies{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px;}
+  .pie-card{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px;}
+  .pie-card h3{margin:0 0 4px; font-size:.82rem;}
+  .pie-card .sub{font-size:.7rem; color:var(--muted); margin-bottom:6px;}
+
+  .legend-inline{display:flex; flex-wrap:wrap; gap:4px 12px; font-size:.72rem; color:var(--muted); margin:8px 0 0;}
+  .legend-inline span{display:flex; align-items:center; gap:5px;}
+
+  .progress{height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin:6px 0;}
+  .progress div{height:100%; background:var(--accent); width:0;}
+
+  .sources{margin-top:36px; border-top:1px solid var(--border); padding-top:16px;}
+  .sources h2{font-size:1.05rem;}
+  .sources ul{font-size:.82rem; color:var(--muted); padding-left:18px;}
+  .site-footer{border-top:1px solid var(--border); padding:16px 0; color:var(--muted); font-size:.78rem;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <div>
+      <span class="brand-name">Mean-Variance Optimization</span>
+      <span class="brand-tag">An interactive teaching dashboard</span>
+    </div>
+    <button id="theme-toggle" type="button">Dark mode</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <h1>Problems with Mean-Variance Optimization</h1>
+    <p class="lede">Run Markowitz optimization on J.P. Morgan's published forward-looking capital market assumptions and watch it fail. Expected returns are noisy and correlation matrices are unstable, so the optimizer behaves as an <em>estimation-error maximizer</em>: it concentrates the portfolio in whichever asset classes happen to carry the most favorable forecast error. The last tab builds the standard fixes.</p>
+  </section>
+
+  <section class="controls">
+    <div class="ctl-row">
+      <label class="ctl">Expected return input
+        <select id="basis">
+          <option value="arith2026" selected>Arithmetic return, 2026 edition</option>
+          <option value="compound2026">Compound return, 2026 edition</option>
+          <option value="compound2025">Compound return, 2025 edition</option>
+        </select>
+      </label>
+      <label class="ctl">Weight constraints
+        <select id="constraint">
+          <option value="long" selected>Long only (0 to 100%)</option>
+          <option value="short">Shorting allowed</option>
+          <option value="capped">Long only, capped per asset</option>
+        </select>
+      </label>
+      <label class="ctl slider" id="bound-ctl" hidden>Short/leverage bound: <strong id="bound-label">50%</strong>
+        <input type="range" id="bound" min="10" max="200" step="10" value="50">
+      </label>
+      <label class="ctl slider" id="cap-ctl" hidden>Maximum weight per asset: <strong id="cap-label">25%</strong>
+        <input type="range" id="cap" min="5" max="100" step="5" value="25">
+      </label>
+    </div>
+    <div class="ctl-row" style="margin-top:12px;">
+      <div class="ctl">Universe presets
+        <div style="display:flex; gap:6px; flex-wrap:wrap;" id="presets"></div>
+      </div>
+      <div class="ctl" style="margin-left:auto; text-align:right;">Selected
+        <strong id="uni-count">10 asset classes</strong>
+      </div>
+    </div>
+    <details class="universe" id="uni-details">
+      <summary>Choose asset classes (all 58 investable J.P. Morgan classes)</summary>
+      <div class="uni-groups" id="uni-groups"></div>
+      <p class="cap">Numbers are the expected return and annualized volatility under the input selected above. Adding near-duplicate classes &mdash; U.S. Large Cap next to the U.S. value, quality and dividend factors, or U.S. Aggregate Bonds next to U.S. Securitized &mdash; is the fastest way to see the optimizer pick corners.</p>
+    </details>
+  </section>
+
+  <section class="tiles" id="tiles"></section>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="frontier" type="button">Frontier &amp; Allocations</button>
+    <button class="tab" data-tab="error" type="button">Estimation Error</button>
+    <button class="tab" data-tab="robust" type="button">Robust Fixes</button>
+  </nav>
+
+  <section class="panel" id="panel-frontier">
+    <h2>Minimum-variance frontier</h2>
+    <div class="ctl-row" style="margin-bottom:10px;">
+      <label class="chk"><input type="checkbox" id="show-assets" checked><span>Plot the individual asset classes</span></label>
+      <label class="chk"><input type="checkbox" id="show-tangency" checked><span>Show the maximum-Sharpe portfolio and the capital allocation line</span></label>
+      <label class="chk"><input type="checkbox" id="show-vintage"><span>Overlay the frontier from the 2025-edition assumptions</span></label>
+    </div>
+    <div class="chart" id="chart-frontier" style="height:340px;"></div>
+    <p class="cap">Each point solves min <em>w&prime;&Sigma;w</em> subject to <em>w&prime;&mu;</em> = <em>r&#772;</em> and <em>&Sigma;w<sub>i</sub></em> = 1, traced out by sweeping the risk-aversion parameter. Returns and volatilities are annualized percentages taken directly from the J.P. Morgan assumptions; &Sigma; is built from their published volatilities and their 59&times;59 correlation matrix. The dots are the individual asset classes. Switch on the 2025 overlay to see how much the frontier &mdash; and the allocations below &mdash; move on one year of forecast revisions.<span id="note-frontier"></span></p>
+
+    <h2>Allocations across the frontier</h2>
+    <div class="ctl-row" style="margin-bottom:10px;">
+      <label class="ctl">Horizontal axis
+        <select id="area-x">
+          <option value="sd" selected>Portfolio volatility</option>
+          <option value="pos">Position (0 = minimum variance, 100 = maximum return)</option>
+        </select>
+      </label>
+      <label class="chk"><input type="checkbox" id="show-corners" checked><span>Mark corner portfolios</span></label>
+    </div>
+    <div class="chart" id="chart-area" style="height:330px;"></div>
+    <div class="legend-inline" id="area-legend"></div>
+    <p class="cap">Idzorek's efficient-frontier asset allocation area graph. Every vertical slice is one portfolio on the frontier above; band thickness is that class's weight. Dashed lines mark corner portfolios, where a class enters or leaves the allocation. Read the right-hand edge: the highest-return portfolio is always 100% in a single asset class. Steep vertical bands mean a tiny change in risk tolerance swings the allocation &mdash; the instability the lecture warns about.</p>
+
+    <div id="vintage-area-wrap" hidden>
+      <h3>The same optimizer, the 2025-edition assumptions</h3>
+      <div class="chart" id="chart-area-2025" style="height:280px;"></div>
+      <p class="cap">One year of revisions to the same forecasts, the same volatilities and the same correlation matrix. This is Idzorek's Figures 2 and 4 side by side: the allocations that were optimal under last year's assumptions are not the ones optimal under this year's, and no investor would have held either.</p>
+    </div>
+
+    <h2>How diversified is this frontier?</h2>
+    <div class="tbl-scroll"><div id="frontier-metrics"></div></div>
+    <p class="cap">Averages taken over the 101 frontier portfolios. <strong>Classes in the allocation</strong> counts weights above 0.5%. <strong>Weight dispersion</strong> is &radic;&Sigma;(<em>w<sub>i</sub></em> &minus; 1/<em>N</em>)&sup2;, Idzorek's frontier-variability idea: it is zero for an equally weighted portfolio and 1 for a single-asset portfolio, so lower means more evenly spread. <strong>Effective number of classes</strong> is 1/&Sigma;<em>w<sub>i</sub></em>&sup2;, the number of equally weighted positions that would give the same concentration.</p>
+
+    <h2>Portfolio at a chosen risk level</h2>
+    <div class="ctl-row" style="margin-bottom:10px;">
+      <label class="ctl slider">Target volatility: <strong id="target-label">7.5%</strong>
+        <input type="range" id="target-sd" min="0" max="1000" step="1" value="300">
+      </label>
+    </div>
+    <div class="tbl-scroll"><div id="target-table"></div></div>
+    <p class="cap">The frontier portfolio closest to the target volatility, with each class's weight, its share of total portfolio variance, and its marginal contribution to risk. At the maximum-Sharpe portfolio the ratio of excess return to marginal risk contribution is equal across every class that is held &mdash; that is the condition the optimizer is enforcing.</p>
+  </section>
+
+  <section class="panel hidden" id="panel-error">
+    <h2>Shock the forecasts</h2>
+    <p class="cap" style="margin:0 0 12px;">Chopra and Ziemba (1993) found that at a moderate risk tolerance, mean-variance optimization is about <strong>11 times</strong> more sensitive to estimation error in expected returns than in variances, and about <strong>2 times</strong> more sensitive to variances than to covariances. Shift any forecast below and watch the weights move. One standard error of an expected return is <em>&sigma;/&radic;T</em>, so the slider is denominated in standard errors for an assumed sample length.</p>
+    <div class="grid-side">
+      <div class="side">
+        <label>Sample length for standard errors (years) <input type="number" id="err-T" value="20" min="2" max="200" step="1"></label>
+        <div class="cap" id="err-se-note" style="margin:0;"></div>
+        <hr>
+        <label>Target volatility: <strong id="err-target-label">7.5%</strong>
+          <input type="range" id="err-target" min="0" max="1000" step="1" value="300">
+        </label>
+        <hr>
+        <div>Shock everything at once</div>
+        <label>Expected returns: <strong id="err-all-label">0.00 SE</strong>
+          <input type="range" id="err-all" min="-200" max="200" step="5" value="0">
+        </label>
+        <div class="cap" style="margin:0;">Draws one common direction: each class is shifted by this many of its own standard errors, scaled by a fixed pseudo-random sign so the shock is a plausible error pattern rather than a parallel shift.</div>
+        <button class="btn" type="button" id="err-random">New random error pattern</button>
+        <button class="btn" type="button" id="err-reset">Reset all shocks</button>
+      </div>
+      <div>
+        <h3>Expected-return shocks, in standard errors</h3>
+        <div class="shock-list" id="shock-list"></div>
+        <h3>Weights before and after</h3>
+        <div class="chart" id="chart-shock" style="height:280px;"></div>
+        <p class="cap" id="shock-readout"></p>
+      </div>
+    </div>
+
+    <h2>Which input is the optimizer most sensitive to?</h2>
+    <p class="cap" style="margin:0 0 10px;">Each row perturbs one <em>kind</em> of input by one standard error's worth of noise, holding the others at the J.P. Morgan values, and reports how far the target-volatility portfolio moves. Turnover is &frac12;&Sigma;|&Delta;<em>w<sub>i</sub></em>|, the fraction of the portfolio that would have to be traded. Averaged over many independent noise draws.</p>
+    <div class="ctl-row" style="margin-bottom:10px;">
+      <label class="ctl">Noise draws <input type="number" id="cz-draws" value="200" min="20" max="2000" step="20"></label>
+      <label class="ctl">Seed <input type="number" id="cz-seed" value="7" step="1"></label>
+      <button class="btn primary" type="button" id="cz-run">Run</button>
+    </div>
+    <div class="progress" id="cz-progress" hidden><div></div></div>
+    <div class="tbl-scroll"><div id="cz-table"></div></div>
+    <p class="cap">Expected returns are perturbed by <em>&sigma;<sub>i</sub>/&radic;T</em>, volatilities by their own standard error <em>&sigma;<sub>i</sub>/&radic;(2T)</em>, and correlations by the standard error of a sample correlation, (1&minus;&rho;&sup2;)/&radic;T, with the shocked correlation matrix repaired to the nearest valid one. If returns move the portfolio far more than the other two, the lecture's point stands: the optimizer is mostly reacting to the input we estimate worst.</p>
+
+    <h2>Frontiers you might have drawn instead</h2>
+    <div class="ctl-row" style="margin-bottom:10px;">
+      <label class="ctl">Alternative frontiers <input type="number" id="spag-n" value="40" min="5" max="300" step="5"></label>
+      <label class="ctl">Seed <input type="number" id="spag-seed" value="3" step="1"></label>
+      <button class="btn primary" type="button" id="spag-run">Run</button>
+    </div>
+    <div class="progress" id="spag-progress" hidden><div></div></div>
+    <div class="chart" id="chart-spaghetti" style="height:330px;"></div>
+    <p class="cap">Each faint line is the frontier you would have computed if your expected returns had been drawn once from <em>N</em>(&mu;<sub>JPM</sub>, &sigma;&sup2;/<em>T</em>) &mdash; that is, if your forecast had been wrong by a perfectly ordinary amount. The solid line is the J.P. Morgan frontier. The spread is the honest uncertainty in the frontier's <em>location</em>; the allocation chart underneath shows that the uncertainty in the frontier's <em>composition</em> is far worse.</p>
+    <h3>Weight ranges at the target volatility</h3>
+    <div class="chart" id="chart-spag-box" style="height:280px;"></div>
+    <p class="cap">For the target-volatility portfolio, the 5th to 95th percentile range of each class's weight across those draws, with the J.P. Morgan answer marked. Wide bars on classes that the baseline excludes entirely are the clearest statement of the problem: the data cannot tell these classes apart.</p>
+  </section>
+
+  <section class="panel hidden" id="panel-robust">
+    <h2>Reference portfolio for reverse optimization</h2>
+    <p class="cap" style="margin:0 0 12px;">The Black-Litterman anchor is the set of expected returns <em>implied</em> by a portfolio you are willing to call efficient: &Pi; = &delta;&Sigma;<em>w</em><sub>ref</sub>. The J.P. Morgan file has no market capitalizations, so pick a reference portfolio below &mdash; a policy benchmark works just as well, and Idzorek notes this is how the model is used in practice.</p>
+    <div class="grid-side">
+      <div class="side">
+        <label>Reference weights
+          <select id="bl-ref">
+            <option value="equal" selected>Equally weighted</option>
+            <option value="invvol">Inverse volatility</option>
+            <option value="6040">60/40 style (equities / bonds / alts)</option>
+            <option value="custom">Custom (edit in the table)</option>
+          </select>
+        </label>
+        <hr>
+        <label class="chk"><input type="checkbox" id="bl-auto" checked><span>Set the risk premium from the reference portfolio's own J.P. Morgan expected excess return</span></label>
+        <label>Risk premium on the reference portfolio (%) <input type="number" id="bl-mrp" step="0.1" value="4.0"></label>
+        <div class="cap" id="bl-delta-note" style="margin:0;"></div>
+        <hr>
+        <label>Target volatility: <strong id="rob-target-label">7.5%</strong>
+          <input type="range" id="rob-target" min="0" max="1000" step="1" value="300">
+        </label>
+        <hr>
+        <div>Resampling</div>
+        <label>Resamples <input type="number" id="rs-n" value="100" min="10" max="1000" step="10"></label>
+        <label>Simulated years per resample <input type="number" id="rs-T" value="20" min="3" max="200" step="1"></label>
+        <label>Seed <input type="number" id="rs-seed" value="11" step="1"></label>
+        <button class="btn primary" type="button" id="rs-run">Run resampling</button>
+        <div class="progress" id="rs-progress" hidden><div></div></div>
+        <div class="cap" id="rs-note" style="margin:0;"></div>
+      </div>
+      <div>
+        <h3>Implied equilibrium returns vs. the J.P. Morgan forecasts</h3>
+        <div class="chart" id="chart-implied" style="height:300px;"></div>
+        <p class="cap">Reverse optimization spreads the estimation error in the volatilities and correlations across the return forecasts, producing returns that are a clean linear function of beta risk. Classes sitting far from the 45-degree line are where the J.P. Morgan view disagrees most with equilibrium &mdash; and in a traditional optimizer, those are exactly the classes that would dominate the allocation.</p>
+        <h3>Security market line</h3>
+        <div class="chart" id="chart-sml" style="height:260px;"></div>
+        <p class="cap">Idzorek's Figure 5. By construction the implied excess returns are exactly proportional to beta against the reference portfolio, so every class has the same ratio of implied excess return to beta. Changing the risk premium rotates this line and changes the frontier's shape, but it does not change the resulting allocations.</p>
+      </div>
+    </div>
+
+    <h2>Add views</h2>
+    <p class="cap" style="margin:0 0 10px;">A view states an expected total return for one class. Confidence 100% replaces the equilibrium return outright; lower confidence shrinks the posterior back toward equilibrium, which is what keeps the allocations diversified.</p>
+    <div class="views-list" id="views-list"></div>
+    <button class="btn" type="button" id="view-add" style="margin-top:8px;">Add a view</button>
+    <p class="cap" id="views-note"></p>
+
+    <h2>Five ways to build the allocation</h2>
+    <div class="ctl-row" style="margin-bottom:10px;" id="method-toggles"></div>
+    <div class="chart" id="chart-robust-frontier" style="height:330px;"></div>
+    <p class="cap">All frontiers use the same J.P. Morgan volatilities and correlation matrix; only the expected returns and the optimizer change. Risk parity and minimum variance are single portfolios, not frontiers, because they use no expected returns at all &mdash; the lecture's first suggested fix.<span id="note-robust-frontier"></span></p>
+
+    <h3>Allocations, method by method</h3>
+    <div id="robust-areas"></div>
+
+    <h2>Diversification scorecard</h2>
+    <div class="tbl-scroll"><div id="robust-metrics"></div></div>
+    <p class="cap">Idzorek's Table 2, recomputed on these assumptions and this universe. The pattern he reports should reproduce: equilibrium returns raise the number of classes held, resampling raises it further, and the combination of the two is the most diversified.</p>
+
+    <h2>The portfolio at the target volatility</h2>
+    <div class="pies" id="robust-pies"></div>
+    <div class="legend-inline" id="robust-pie-legend"></div>
+    <p class="cap">Idzorek's Figures 14 to 16: the same risk level, five different ways of getting there. Move the target-volatility slider to compare the conservative, moderate and aggressive ends of the risk spectrum.</p>
+    <div class="tbl-scroll" style="margin-top:12px;"><div id="robust-table"></div></div>
+  </section>
+
+  <section class="sources">
+    <h2>Sources &amp; notes</h2>
+    <ul id="sources-list"></ul>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">Built for Asset Management in the Global Economy. For teaching and illustration only.</div>
+</footer>
+
+<script>
+const DATA = {"meta":{"source":"J.P. Morgan Asset Management, 2026 Long-Term Capital Market Assumptions (USD), 30th edition","sheet":"2026","nAssets":59,"nInvestable":58,"corrMinEigenvalue":0.004179,"riskFreeAsset":"U.S. Cash","returnBases":{"arith2026":"Arithmetic return, 2026 edition","compound2026":"Compound return, 2026 edition","compound2025":"Compound return, 2025 edition"}},"assets":[{"name":"U.S. Inflation","group":"Fixed Income","compound2025":2.5,"arith2026":2.5153,"vol":1.77,"compound2026":2.4,"investable":false},{"name":"U.S. Cash","group":"Fixed Income","compound2025":3.1,"arith2026":3.1022,"vol":0.6693,"compound2026":3.1,"investable":true},{"name":"U.S. Intermediate Treasuries","group":"Fixed Income","compound2025":4.0,"arith2026":4.0582,"vol":3.4812,"compound2026":3.8,"investable":true},{"name":"U.S. Long Treasuries","group":"Fixed Income","compound2025":4.9,"arith2026":5.6924,"vol":13.0153,"compound2026":4.3,"investable":true},{"name":"TIPS","group":"Fixed Income","compound2025":4.3,"arith2026":4.465,"vol":5.8792,"compound2026":4.1,"investable":true},{"name":"U.S. Aggregate Bonds","group":"Fixed Income","compound2025":4.8,"arith2026":4.9077,"vol":4.7565,"compound2026":4.6,"investable":true},{"name":"U.S. Securitized","group":"Fixed Income","compound2025":5.2,"arith2026":5.2831,"vol":4.1859,"compound2026":4.9,"investable":true},{"name":"U.S. Short Duration Government/Credit","group":"Fixed Income","compound2025":4.0,"arith2026":4.0128,"vol":1.6323,"compound2026":3.9,"investable":true},{"name":"U.S. Long Duration Government/Credit","group":"Fixed Income","compound2025":5.2,"arith2026":5.8144,"vol":11.453,"compound2026":4.7,"investable":true},{"name":"U.S. Inv Grade Corporate Bonds","group":"Fixed Income","compound2025":5.2,"arith2026":5.4579,"vol":7.3882,"compound2026":5.0,"investable":true},{"name":"U.S. Long Corporate Bonds","group":"Fixed Income","compound2025":5.4,"arith2026":6.1035,"vol":12.2797,"compound2026":4.9,"investable":true},{"name":"U.S. High Yield Bonds","group":"Fixed Income","compound2025":6.1,"arith2026":6.4568,"vol":8.7381,"compound2026":6.1,"investable":true},{"name":"U.S. Leveraged Loans","group":"Fixed Income","compound2025":6.6,"arith2026":6.8766,"vol":7.7048,"compound2026":6.6,"investable":true},{"name":"World Government Bonds hedged","group":"Fixed Income","compound2025":4.3,"arith2026":4.3771,"vol":4.0153,"compound2026":3.9,"investable":true},{"name":"World Government Bonds","group":"Fixed Income","compound2025":4.3,"arith2026":4.5519,"vol":7.271,"compound2026":4.2,"investable":true},{"name":"World ex-U.S. Government Bonds hedged","group":"Fixed Income","compound2025":4.2,"arith2026":4.2747,"vol":3.9499,"compound2026":3.8,"investable":true},{"name":"World ex-U.S. Government Bonds","group":"Fixed Income","compound2025":4.3,"arith2026":4.6902,"vol":9.0643,"compound2026":4.2,"investable":true},{"name":"Emerging Markets Sovereign Debt","group":"Fixed Income","compound2025":6.3,"arith2026":6.6639,"vol":8.8333,"compound2026":5.8,"investable":true},{"name":"Emerging Markets Local Currency Debt","group":"Fixed Income","compound2025":6.7,"arith2026":7.3777,"vol":12.1213,"compound2026":6.1,"investable":true},{"name":"Emerging Markets Corporate Bonds","group":"Fixed Income","compound2025":6.1,"arith2026":6.373,"vol":7.6359,"compound2026":6.2,"investable":true},{"name":"U.S. Muni 1-15 Yr Blend","group":"Fixed Income","compound2025":3.8,"arith2026":3.8834,"vol":4.165,"compound2026":3.6,"investable":true},{"name":"U.S. Muni High Yield","group":"Fixed Income","compound2025":5.3,"arith2026":5.6583,"vol":8.7233,"compound2026":4.7,"investable":true},{"name":"U.S. Large Cap","group":"Equities","compound2025":6.7,"arith2026":7.9351,"vol":16.4701,"compound2026":6.7,"investable":true},{"name":"U.S. Mid Cap","group":"Equities","compound2025":7.0,"arith2026":8.5532,"vol":18.563,"compound2026":7.0,"investable":true},{"name":"U.S. Small Cap","group":"Equities","compound2025":6.9,"arith2026":8.888,"vol":21.0971,"compound2026":6.9,"investable":true},{"name":"Euro Area Large Cap","group":"Equities","compound2025":7.8,"arith2026":9.9441,"vol":22.0365,"compound2026":8.5,"investable":true},{"name":"Japanese Equity","group":"Equities","compound2025":8.8,"arith2026":9.9144,"vol":15.7718,"compound2026":9.0,"investable":true},{"name":"Hong Kong Equity","group":"Equities","compound2025":7.4,"arith2026":9.4284,"vol":21.3681,"compound2026":7.4,"investable":true},{"name":"UK Large Cap","group":"Equities","compound2025":6.6,"arith2026":7.993,"vol":17.5155,"compound2026":7.8,"investable":true},{"name":"EAFE Equity","group":"Equities","compound2025":7.5,"arith2026":8.8995,"vol":17.6295,"compound2026":8.1,"investable":true},{"name":"Chinese Domestic Equity","group":"Equities","compound2025":7.7,"arith2026":11.2266,"vol":28.696,"compound2026":7.8,"investable":true},{"name":"Emerging Markets Equity","group":"Equities","compound2025":7.8,"arith2026":9.7436,"vol":20.9332,"compound2026":7.2,"investable":true},{"name":"AC Asia ex-Japan Equity","group":"Equities","compound2025":7.9,"arith2026":9.8262,"vol":20.8445,"compound2026":7.2,"investable":true},{"name":"AC World Equity","group":"Equities","compound2025":7.0,"arith2026":8.2772,"vol":16.7794,"compound2026":7.1,"investable":true},{"name":"U.S. Equity Value Factor","group":"Equities","compound2025":7.7,"arith2026":9.108,"vol":17.7005,"compound2026":7.7,"investable":true},{"name":"U.S. Equity Momentum Factor","group":"Equities","compound2025":7.6,"arith2026":8.9122,"vol":17.0607,"compound2026":7.6,"investable":true},{"name":"U.S. Equity Quality Factor","group":"Equities","compound2025":6.6,"arith2026":7.6447,"vol":15.1076,"compound2026":6.7,"investable":true},{"name":"U.S. Equity Minimum Volatility Factor","group":"Equities","compound2025":7.0,"arith2026":7.7942,"vol":13.1579,"compound2026":7.0,"investable":true},{"name":"U.S. Equity Dividend Yield Factor","group":"Equities","compound2025":7.5,"arith2026":8.7101,"vol":16.3569,"compound2026":7.7,"investable":true},{"name":"Global Convertible Bonds hedged","group":"Equities","compound2025":6.7,"arith2026":7.277,"vol":11.1714,"compound2026":6.7,"investable":true},{"name":"U.S. Core Real Estate","group":"Alternatives","compound2025":8.2,"arith2026":8.7919,"vol":11.3948,"compound2026":8.1,"investable":true},{"name":"U.S. Value-Added Real Estate","group":"Alternatives","compound2025":10.1,"arith2026":11.7195,"vol":19.2325,"compound2026":10.1,"investable":true},{"name":"European Core Real Estate","group":"Alternatives","compound2025":6.9,"arith2026":7.7668,"vol":13.7515,"compound2026":7.6,"investable":true},{"name":"Asia Pacific Core Real Estate","group":"Alternatives","compound2025":8.4,"arith2026":9.5467,"vol":15.9759,"compound2026":8.1,"investable":true},{"name":"U.S. REITs","group":"Alternatives","compound2025":8.8,"arith2026":10.1487,"vol":17.3969,"compound2026":8.0,"investable":true},{"name":"Commercial Mortgage Loans","group":"Alternatives","compound2025":6.2,"arith2026":6.495,"vol":7.9438,"compound2026":6.4,"investable":true},{"name":"Global Core Infrastructure","group":"Alternatives","compound2025":6.5,"arith2026":6.9878,"vol":10.2518,"compound2026":6.3,"investable":true},{"name":"Global Core Transport","group":"Alternatives","compound2025":7.9,"arith2026":8.6428,"vol":12.7695,"compound2026":7.8,"investable":true},{"name":"Global Timberland","group":"Alternatives","compound2025":6.3,"arith2026":6.7099,"vol":9.3798,"compound2026":5.3,"investable":true},{"name":"Commodities","group":"Alternatives","compound2025":4.6,"arith2026":6.1462,"vol":18.3184,"compound2026":3.8,"investable":true},{"name":"Gold","group":"Alternatives","compound2025":5.5,"arith2026":6.7793,"vol":16.6791,"compound2026":4.0,"investable":true},{"name":"Private Equity","group":"Alternatives","compound2025":10.2,"arith2026":11.9082,"vol":19.7802,"compound2026":9.9,"investable":true},{"name":"Venture Capital","group":"Alternatives","compound2025":8.5,"arith2026":10.6613,"vol":22.1975,"compound2026":8.8,"investable":true},{"name":"Diversified Hedge Funds","group":"Alternatives","compound2025":5.3,"arith2026":5.4564,"vol":5.7494,"compound2026":4.9,"investable":true},{"name":"Event Driven Hedge Funds","group":"Alternatives","compound2025":5.2,"arith2026":5.503,"vol":8.0129,"compound2026":4.9,"investable":true},{"name":"Long Bias Hedge Funds","group":"Alternatives","compound2025":5.5,"arith2026":6.0785,"vol":11.1238,"compound2026":5.0,"investable":true},{"name":"Relative Value Hedge Funds","group":"Alternatives","compound2025":5.7,"arith2026":5.8355,"vol":5.3606,"compound2026":5.0,"investable":true},{"name":"Macro Hedge Funds","group":"Alternatives","compound2025":4.1,"arith2026":4.3323,"vol":6.974,"compound2026":3.8,"investable":true},{"name":"Direct Lending","group":"Alternatives","compound2025":7.7,"arith2026":8.5923,"vol":14.0072,"compound2026":8.2,"investable":true}],"corr":[[1.0,-0.033972,-0.26878,-0.2183,-0.030667,-0.240795,-0.21928,-0.287522,-0.217562,-0.192475,-0.194072,-0.012873,0.152107,-0.289789,-0.183597,-0.29525,-0.171674,-0.160113,-0.064544,-0.096722,-0.181879,0.161029,-0.014027,-0.016837,-0.039005,-0.031155,-0.079801,-0.046282,0.040551,-0.027597,-0.050192,-0.018302,-0.066383,-0.019505,-0.039886,-5.7e-05,-0.029449,-0.02291,-0.019266,-0.108376,0.338908,0.338908,0.372346,0.19906,-0.016874,0.074223,0.15239,0.25002,-0.067501,0.275368,-0.01399,0.067404,-0.066341,0.060759,0.04086,-0.016181,0.10284,0.009859,0.149492],[-0.033972,1.0,0.196023,0.046685,0.018572,0.099422,0.099837,0.315019,0.039508,0.019356,0.008896,-0.034863,-0.042378,0.122189,0.125428,0.120084,0.119222,0.034302,0.110306,-0.014016,0.054747,-0.069806,0.009945,-0.023536,-0.032479,0.077866,0.028028,-0.015341,0.023448,0.049746,0.063618,0.031847,0.026203,0.03023,-0.026056,0.016482,0.013577,-0.057281,-0.057677,-0.000259,-0.119907,-0.119907,-0.023028,-0.10712,-0.046453,0.031309,0.036375,0.125929,0.161586,-0.03367,0.127285,-0.011761,-0.077348,0.041821,0.006749,0.026641,-0.01771,0.007091,-0.057185],[-0.26878,0.196023,1.0,0.837479,0.630438,0.845058,0.786349,0.854119,0.749091,0.547707,0.54062,0.025886,-0.339512,0.868165,0.772453,0.735517,0.67861,0.341733,0.258833,0.223451,0.539429,0.175498,-0.013374,-0.053094,-0.08086,0.034245,0.060188,-0.012998,-0.078128,0.022704,-0.010864,-0.000671,0.029624,-0.003851,-0.050193,-0.022803,0.01084,0.022443,-0.027873,-0.026972,-0.276894,-0.276894,-0.28639,-0.239954,0.133629,0.249114,-0.182687,-0.010443,-0.066569,-0.156294,0.35908,-0.309609,-0.229263,-0.268022,-0.182361,-0.101471,-0.227297,-0.136789,-0.239574],[-0.2183,0.046685,0.837479,1.0,0.611169,0.852554,0.754068,0.610272,0.908273,0.623608,0.690581,0.041254,-0.255223,0.867061,0.68184,0.73695,0.576135,0.378981,0.216836,0.272298,0.531123,0.279914,0.015361,-0.003442,-0.049841,0.004721,0.073645,0.018059,-0.086256,0.015973,0.02565,0.022795,0.064948,0.014239,-0.039354,0.031065,0.035595,0.067464,-0.001056,0.038051,-0.194095,-0.194095,-0.271491,-0.218964,0.225852,0.243102,-0.221327,0.008446,-0.157885,-0.207291,0.302755,-0.354541,-0.234502,-0.182043,-0.163338,-0.085836,-0.182965,-0.111509,-0.219209],[-0.030667,0.018572,0.630438,0.611169,1.0,0.76285,0.697626,0.631746,0.703294,0.728801,0.684529,0.505271,0.184756,0.635916,0.693737,0.588688,0.663423,0.628834,0.465877,0.555245,0.593312,0.498408,0.344511,0.340204,0.255982,0.320365,0.311424,0.238778,0.278318,0.350964,0.129243,0.346943,0.332469,0.36585,0.289896,0.372176,0.353388,0.356979,0.328132,0.376518,0.065312,0.065312,0.190191,0.247301,0.409133,0.551965,0.219501,-0.108646,0.16573,0.270831,0.460817,0.177723,0.156949,0.208944,0.264777,0.300834,0.269984,0.038461,0.188126],[-0.240795,0.099422,0.845058,0.852554,0.76285,1.0,0.937254,0.824984,0.943865,0.873599,0.873073,0.411567,0.048331,0.879725,0.818134,0.790698,0.758069,0.671495,0.497606,0.578537,0.734749,0.456101,0.295348,0.286299,0.217693,0.327457,0.348319,0.289666,0.23787,0.341918,0.193874,0.319139,0.343833,0.327381,0.254162,0.302893,0.31352,0.322571,0.282213,0.351775,-0.149552,-0.149552,-0.0766,0.050637,0.415405,0.480621,0.055406,-0.161116,0.095851,-0.002794,0.379705,0.013666,0.034201,0.061305,0.158271,0.240505,0.148879,-0.108943,0.066639],[-0.21928,0.099837,0.786349,0.754068,0.697626,0.937254,1.0,0.76658,0.819918,0.766713,0.751419,0.408252,0.058692,0.797593,0.744895,0.708112,0.693013,0.613804,0.444395,0.512864,0.712781,0.45819,0.292349,0.288328,0.236408,0.316808,0.338702,0.273655,0.246291,0.331876,0.185832,0.300806,0.32075,0.318396,0.27259,0.286895,0.305048,0.31379,0.288874,0.325219,-0.1115,-0.1115,-0.046069,0.075794,0.405027,0.489225,0.07336,-0.140124,0.11472,-0.010719,0.31606,0.030684,0.051924,0.040435,0.168107,0.233904,0.147792,-0.182224,0.150548],[-0.287522,0.315019,0.854119,0.610272,0.631746,0.824984,0.76658,1.0,0.673191,0.672322,0.61331,0.30832,-0.042289,0.740858,0.76405,0.651519,0.712542,0.507132,0.436862,0.44831,0.568053,0.223542,0.155763,0.132726,0.08228,0.256176,0.265194,0.211213,0.1494,0.252542,0.12534,0.240548,0.2583,0.211882,0.133742,0.145355,0.170167,0.16127,0.146927,0.219806,-0.22803,-0.22803,-0.095432,-0.032584,0.207603,0.326459,0.045946,-0.146013,0.134611,0.019932,0.379909,-0.013907,-0.035365,-0.030847,0.086889,0.166485,0.084248,-0.042764,-0.059023],[-0.217562,0.039508,0.749091,0.908273,0.703294,0.943865,0.819918,0.673191,1.0,0.862855,0.91914,0.360033,0.046131,0.849502,0.759725,0.769461,0.694778,0.643068,0.462013,0.546278,0.662736,0.421575,0.289437,0.28164,0.210481,0.294568,0.337968,0.272609,0.216572,0.32113,0.179753,0.303651,0.333274,0.315759,0.239882,0.302526,0.307181,0.326801,0.279074,0.343239,-0.142872,-0.142872,-0.11309,0.024141,0.430387,0.385049,0.007465,-0.139274,0.047408,-0.008887,0.339432,-0.045492,-0.015136,0.084094,0.148898,0.227155,0.13951,-0.045784,0.022644],[-0.192475,0.019356,0.547707,0.623608,0.728801,0.873599,0.766713,0.672322,0.862855,1.0,0.974164,0.669061,0.363281,0.680965,0.709712,0.655393,0.698777,0.828652,0.629638,0.802692,0.71224,0.577218,0.507947,0.515179,0.424566,0.521116,0.546126,0.495372,0.47462,0.563018,0.312569,0.542758,0.558006,0.559047,0.466731,0.520212,0.517369,0.517226,0.494851,0.614375,-0.01795,-0.01795,0.143114,0.324206,0.548029,0.513872,0.283257,-0.327821,0.259628,0.185384,0.358924,0.352245,0.265263,0.352663,0.43271,0.498992,0.449178,0.002671,0.284857],[-0.194072,0.008896,0.54062,0.690581,0.684529,0.873073,0.751419,0.61331,0.91914,0.974164,1.0,0.610507,0.315604,0.70167,0.701147,0.673971,0.68301,0.790766,0.599261,0.737135,0.681814,0.522105,0.491693,0.496144,0.409512,0.495882,0.527088,0.464026,0.448069,0.539744,0.287309,0.510778,0.529714,0.537347,0.448413,0.502967,0.502461,0.508849,0.481821,0.573863,-0.045729,-0.045729,0.072963,0.263869,0.553649,0.452518,0.227188,-0.280786,0.224657,0.158183,0.317925,0.262281,0.19991,0.316947,0.397999,0.465481,0.399528,0.013083,0.240824],[-0.012873,-0.034863,0.025886,0.041254,0.505271,0.411567,0.408252,0.30832,0.360033,0.669061,0.610507,1.0,0.761468,0.167262,0.349552,0.235504,0.418129,0.755383,0.621748,0.722087,0.447056,0.522372,0.748668,0.787666,0.711587,0.725405,0.681505,0.567532,0.717549,0.769833,0.342311,0.715552,0.687287,0.794529,0.746668,0.762489,0.734504,0.717329,0.737136,0.820599,0.322607,0.322607,0.491711,0.652382,0.680094,0.495034,0.559353,-0.228748,0.374411,0.427156,0.135144,0.705487,0.536412,0.614896,0.773412,0.773685,0.811825,0.076936,0.620373],[0.152107,-0.042378,-0.339512,-0.255223,0.184756,0.048331,0.058692,-0.042289,0.046131,0.363281,0.315604,0.761468,1.0,-0.170503,-0.033737,-0.069353,0.044604,0.457589,0.349946,0.554144,0.18574,0.488096,0.576618,0.618915,0.546643,0.516828,0.488981,0.475125,0.606938,0.574433,0.292031,0.562763,0.527646,0.609602,0.570922,0.603863,0.545679,0.527528,0.571956,0.682672,0.422809,0.422809,0.520145,0.636867,0.42054,0.432172,0.56581,-0.124887,0.292569,0.401304,-0.038393,0.671224,0.505339,0.680325,0.762334,0.681204,0.857871,0.065363,0.615594],[-0.289789,0.122189,0.868165,0.867061,0.635916,0.879725,0.797593,0.740858,0.849502,0.680965,0.70167,0.167262,-0.170503,1.0,0.747158,0.962003,0.672371,0.468724,0.300731,0.336445,0.621486,0.315431,0.141742,0.105002,0.062051,0.114491,0.147976,0.022458,0.00429,0.114062,0.051773,0.080681,0.107569,0.127787,0.088979,0.140376,0.162441,0.173403,0.101928,0.141357,-0.20368,-0.20368,-0.20478,-0.173804,0.285828,0.356101,-0.139097,-0.057407,-0.05969,-0.200485,0.28151,-0.224117,-0.106804,-0.137954,-0.062173,0.007159,-0.101324,-0.138059,-0.116036],[-0.183597,0.125428,0.772453,0.68184,0.693737,0.818134,0.744895,0.76405,0.759725,0.709712,0.701147,0.349552,-0.033737,0.747158,1.0,0.680223,0.984992,0.618146,0.632157,0.488202,0.579116,0.287516,0.316802,0.286506,0.221891,0.440982,0.378916,0.313658,0.335664,0.440988,0.167386,0.412009,0.401787,0.392951,0.276334,0.29957,0.329551,0.332965,0.30196,0.314632,-0.173177,-0.173177,0.061112,0.15513,0.392357,0.307231,0.231054,-0.123825,0.247696,0.185012,0.504878,0.096774,0.031133,0.048924,0.175265,0.280816,0.10843,0.035328,0.013349],[-0.29525,0.120084,0.735517,0.73695,0.588688,0.790698,0.708112,0.651519,0.769461,0.655393,0.673971,0.235504,-0.069353,0.962003,0.680223,1.0,0.633388,0.487091,0.308465,0.33916,0.603609,0.319658,0.221048,0.184744,0.143526,0.160497,0.187113,0.01757,0.056498,0.162941,0.048549,0.109186,0.122649,0.194121,0.171753,0.217427,0.237879,0.240335,0.173903,0.211815,-0.170152,-0.170152,-0.151413,-0.123362,0.327163,0.373127,-0.08269,-0.097834,-0.017971,-0.172249,0.21893,-0.139655,-0.024683,-0.062687,0.023183,0.075173,-0.019813,-0.112126,-0.031961],[-0.171674,0.119222,0.67861,0.576135,0.663423,0.758069,0.693013,0.712542,0.694778,0.698777,0.68301,0.418129,0.044604,0.672371,0.984992,0.633388,1.0,0.652299,0.687805,0.513521,0.564282,0.296982,0.382618,0.357176,0.289054,0.516235,0.439854,0.3716,0.41999,0.519207,0.195965,0.48329,0.462103,0.466578,0.349216,0.363175,0.393763,0.396216,0.37211,0.37923,-0.150809,-0.150809,0.129241,0.236086,0.423933,0.318496,0.325522,-0.159978,0.316906,0.25697,0.502973,0.204159,0.109452,0.120102,0.258258,0.362056,0.189321,0.05562,0.097185],[-0.160113,0.034302,0.341733,0.378981,0.628834,0.671495,0.613804,0.507132,0.643068,0.828652,0.790766,0.755383,0.457589,0.468724,0.618146,0.487091,0.652299,1.0,0.807149,0.888663,0.640939,0.579976,0.630134,0.634554,0.543062,0.682742,0.612854,0.59652,0.621237,0.705803,0.350332,0.70237,0.680405,0.696952,0.598234,0.63176,0.639965,0.635001,0.620398,0.710119,0.0924,0.0924,0.297602,0.471643,0.616978,0.569766,0.482757,-0.292373,0.400239,0.322059,0.321295,0.574783,0.446594,0.46001,0.573433,0.62437,0.592962,0.045189,0.445696],[-0.064544,0.110306,0.258833,0.216836,0.465877,0.497606,0.444395,0.436862,0.462013,0.629638,0.599261,0.621748,0.349946,0.300731,0.632157,0.308465,0.687805,0.807149,1.0,0.723172,0.413264,0.321667,0.593755,0.591205,0.530581,0.733995,0.634734,0.666171,0.667333,0.752355,0.366021,0.799916,0.755656,0.708264,0.59193,0.559844,0.604131,0.611308,0.617138,0.615638,0.101088,0.101088,0.367597,0.50514,0.579951,0.41476,0.537163,-0.138087,0.51229,0.425231,0.388153,0.5918,0.398041,0.398781,0.532935,0.621408,0.539402,0.122809,0.423771],[-0.096722,-0.014016,0.223451,0.272298,0.555245,0.578537,0.512864,0.44831,0.546278,0.802692,0.737135,0.722087,0.554144,0.336445,0.488202,0.33916,0.513521,0.888663,0.723172,1.0,0.512428,0.573502,0.562344,0.570152,0.477189,0.615696,0.580804,0.638831,0.596798,0.654685,0.411843,0.697905,0.687734,0.641464,0.535102,0.552863,0.559448,0.544531,0.547389,0.695887,0.203886,0.203886,0.401501,0.540081,0.519098,0.534497,0.477866,-0.284388,0.343709,0.322831,0.303176,0.600729,0.461173,0.491746,0.570879,0.612075,0.630457,0.019823,0.454633],[-0.181879,0.054747,0.539429,0.531123,0.593312,0.734749,0.712781,0.568053,0.662736,0.71224,0.681814,0.447056,0.18574,0.621486,0.579116,0.603609,0.564282,0.640939,0.413264,0.512428,1.0,0.651154,0.275595,0.292219,0.225997,0.295122,0.28196,0.285849,0.229873,0.299026,0.14194,0.268302,0.28712,0.291352,0.246147,0.30469,0.305194,0.308478,0.28697,0.343388,-0.222337,-0.222337,-0.067651,0.146104,0.340677,0.505695,0.142176,-0.250109,0.137257,-0.046601,0.228875,0.134818,0.124746,0.114236,0.196251,0.232562,0.20674,-0.130218,0.182617],[0.161029,-0.069806,0.175498,0.279914,0.498408,0.456101,0.45819,0.223542,0.421575,0.577218,0.522105,0.522372,0.488096,0.315431,0.287516,0.319658,0.296982,0.579976,0.321667,0.573502,0.651154,1.0,0.353478,0.359435,0.271737,0.312734,0.311319,0.356861,0.364084,0.350958,0.21004,0.382219,0.380513,0.367249,0.297938,0.382362,0.342775,0.350899,0.324606,0.413153,0.330848,0.330848,0.340769,0.482607,0.380934,0.594789,0.302209,-0.096767,0.131158,0.201386,0.147992,0.365944,0.318957,0.400722,0.412363,0.362133,0.480791,-0.086263,0.436536],[-0.014027,0.009945,-0.013374,0.015361,0.344511,0.295348,0.292349,0.155763,0.289437,0.507947,0.491693,0.748668,0.576618,0.141742,0.316802,0.221048,0.382618,0.630134,0.593755,0.562344,0.275595,0.353478,1.0,0.956913,0.895928,0.837516,0.744844,0.555411,0.814334,0.874464,0.341773,0.732463,0.699383,0.96507,0.961615,0.966187,0.987222,0.92004,0.920401,0.857931,0.350424,0.350424,0.537518,0.57387,0.770619,0.305579,0.471899,-0.068364,0.445254,0.421631,0.030401,0.753945,0.629112,0.677913,0.803512,0.870707,0.684079,0.136739,0.551007],[-0.016837,-0.023536,-0.053094,-0.003442,0.340204,0.286299,0.288328,0.132726,0.28164,0.515179,0.496144,0.787666,0.618915,0.105002,0.286506,0.184744,0.357176,0.634554,0.591205,0.570152,0.292219,0.359435,0.956913,1.0,0.95137,0.826252,0.735777,0.561679,0.803613,0.865953,0.340446,0.741982,0.704923,0.943461,0.964392,0.959189,0.953175,0.910959,0.939255,0.891073,0.319301,0.319301,0.503419,0.616246,0.791684,0.328039,0.483469,-0.120252,0.468334,0.437462,0.033869,0.779124,0.665058,0.712807,0.852361,0.901341,0.734709,0.171434,0.605544],[-0.039005,-0.032479,-0.08086,-0.049841,0.255982,0.217693,0.236408,0.08228,0.210481,0.424566,0.409512,0.711587,0.546643,0.062051,0.221891,0.143526,0.289054,0.543062,0.530581,0.477189,0.225997,0.271737,0.895928,0.95137,1.0,0.748501,0.674692,0.487257,0.718913,0.783776,0.305598,0.659932,0.631862,0.867724,0.927881,0.892953,0.892426,0.843245,0.885978,0.833033,0.282813,0.282813,0.425901,0.530262,0.754265,0.242336,0.432509,-0.105744,0.447841,0.354981,-0.032726,0.735384,0.69865,0.640942,0.819622,0.853518,0.662224,0.126955,0.576382],[-0.031155,0.077866,0.034245,0.004721,0.320365,0.327457,0.316808,0.256176,0.294568,0.521116,0.495882,0.725405,0.516828,0.114491,0.440982,0.160497,0.516235,0.682742,0.733995,0.615696,0.295122,0.312734,0.837516,0.826252,0.748501,1.0,0.775776,0.665392,0.90742,0.970738,0.3753,0.818479,0.781935,0.922337,0.830783,0.80282,0.82877,0.783644,0.805358,0.800361,0.202697,0.202697,0.512166,0.607482,0.681847,0.285901,0.567699,-0.084124,0.556288,0.446291,0.11881,0.757763,0.548068,0.627082,0.753298,0.823311,0.678991,0.172803,0.507182],[-0.079801,0.028028,0.060188,0.073645,0.311424,0.348319,0.338702,0.265194,0.337968,0.546126,0.527088,0.681505,0.488981,0.147976,0.378916,0.187113,0.439854,0.612854,0.634734,0.580804,0.28196,0.311319,0.744844,0.735777,0.674692,0.775776,1.0,0.583015,0.759502,0.860034,0.342397,0.710468,0.69146,0.819864,0.736704,0.724366,0.73198,0.680046,0.703581,0.747394,0.235972,0.235972,0.411711,0.506191,0.579634,0.153728,0.461982,-0.228776,0.377399,0.361241,0.072303,0.58968,0.503194,0.581755,0.688853,0.767051,0.639997,0.09723,0.378293],[-0.046282,-0.015341,-0.012998,0.018059,0.238778,0.289666,0.273655,0.211213,0.272609,0.495372,0.464026,0.567532,0.475125,0.022458,0.313658,0.01757,0.3716,0.59652,0.666171,0.638831,0.285849,0.356861,0.555411,0.561679,0.487257,0.665392,0.583015,1.0,0.706947,0.71476,0.608364,0.834881,0.876673,0.680155,0.545291,0.539729,0.539235,0.531096,0.569611,0.647576,0.186237,0.186237,0.456172,0.640119,0.457607,0.302258,0.514894,-0.12281,0.527484,0.40621,0.2242,0.675949,0.491287,0.536912,0.587257,0.688387,0.632872,0.14674,0.475781],[0.040551,0.023448,-0.078128,-0.086256,0.278318,0.23787,0.246291,0.1494,0.216572,0.47462,0.448069,0.717549,0.606938,0.00429,0.335664,0.056498,0.41999,0.621237,0.667333,0.596798,0.229873,0.364084,0.814334,0.803613,0.718913,0.90742,0.759502,0.706947,1.0,0.94452,0.388747,0.806476,0.764878,0.899615,0.819036,0.76856,0.802327,0.782322,0.823818,0.768139,0.322268,0.322268,0.581098,0.688129,0.639914,0.280873,0.591726,-0.134939,0.530202,0.577874,0.135532,0.777629,0.53869,0.673555,0.794124,0.830248,0.745072,0.22304,0.573188],[-0.027597,0.049746,0.022704,0.015973,0.350964,0.341918,0.331876,0.252542,0.32113,0.563018,0.539744,0.769833,0.574433,0.114062,0.440988,0.162941,0.519207,0.705803,0.752355,0.654685,0.299026,0.350958,0.874464,0.865953,0.783776,0.970738,0.860034,0.71476,0.94452,1.0,0.401318,0.857008,0.821644,0.960915,0.863821,0.844741,0.865311,0.827596,0.848629,0.847765,0.261284,0.261284,0.546009,0.663208,0.711913,0.294844,0.576967,-0.138879,0.550298,0.500817,0.141424,0.781566,0.577059,0.686054,0.809569,0.880732,0.74244,0.197507,0.54256],[-0.050192,0.063618,-0.010864,0.02565,0.129243,0.193874,0.185832,0.12534,0.179753,0.312569,0.287309,0.342311,0.292031,0.051773,0.167386,0.048549,0.195965,0.350332,0.366021,0.411843,0.14194,0.21004,0.341773,0.340446,0.305598,0.3753,0.342397,0.608364,0.388747,0.401318,1.0,0.570687,0.621143,0.411913,0.323571,0.350368,0.329325,0.294499,0.300469,0.469973,0.129113,0.129113,0.40286,0.36065,0.175478,0.226795,0.131058,-0.13116,0.339265,0.179208,0.206142,0.488917,0.472629,0.427532,0.404115,0.473102,0.432812,0.094948,0.219259],[-0.018302,0.031847,-0.000671,0.022795,0.346943,0.319139,0.300806,0.240548,0.303651,0.542758,0.510778,0.715552,0.562763,0.080681,0.412009,0.109186,0.48329,0.70237,0.799916,0.697905,0.268302,0.382219,0.732463,0.741982,0.659932,0.818479,0.710468,0.834881,0.806476,0.857008,0.570687,1.0,0.978205,0.857021,0.719913,0.724437,0.712787,0.677822,0.716019,0.795623,0.279732,0.279732,0.60766,0.696458,0.590439,0.37201,0.575146,-0.147623,0.532624,0.544346,0.249271,0.795229,0.601686,0.661842,0.7405,0.843928,0.748045,0.224246,0.531171],[-0.066383,0.026203,0.029624,0.064948,0.332469,0.343833,0.32075,0.2583,0.333274,0.558006,0.529714,0.687287,0.527646,0.107569,0.401787,0.122649,0.462103,0.680405,0.755656,0.687734,0.28712,0.380513,0.699383,0.704923,0.631862,0.781935,0.69146,0.876673,0.764878,0.821644,0.621143,0.978205,1.0,0.82127,0.682954,0.691514,0.678238,0.643218,0.675877,0.780234,0.26554,0.26554,0.570164,0.671957,0.570383,0.353226,0.520769,-0.134689,0.500616,0.467094,0.226256,0.757588,0.592091,0.627271,0.698065,0.810653,0.709936,0.193009,0.485019],[-0.019505,0.03023,-0.003851,0.014239,0.36585,0.327381,0.318396,0.211882,0.315759,0.559047,0.537347,0.794529,0.609602,0.127787,0.392951,0.194121,0.466578,0.696952,0.708264,0.641464,0.291352,0.367249,0.96507,0.943461,0.867724,0.922337,0.819864,0.680155,0.899615,0.960915,0.411913,0.857021,0.82127,1.0,0.936479,0.940314,0.950462,0.889942,0.906529,0.898158,0.322523,0.322523,0.584144,0.6534,0.755881,0.322197,0.549418,-0.113176,0.516451,0.498777,0.110192,0.806953,0.637507,0.724727,0.846561,0.925185,0.75851,0.196746,0.569254],[-0.039886,-0.026056,-0.050193,-0.039354,0.289896,0.254162,0.27259,0.133742,0.239882,0.466731,0.448413,0.746668,0.570922,0.088979,0.276334,0.171753,0.349216,0.598234,0.59193,0.535102,0.246147,0.297938,0.961615,0.964392,0.927881,0.830783,0.736704,0.545291,0.819036,0.863821,0.323571,0.719913,0.682954,0.936479,1.0,0.910108,0.956725,0.91862,0.963916,0.827139,0.322029,0.322029,0.471903,0.593583,0.783004,0.2741,0.482523,-0.103352,0.465617,0.413026,-0.002803,0.749742,0.59843,0.634026,0.817637,0.859333,0.693227,0.141206,0.585656],[-5.7e-05,0.016482,-0.022803,0.031065,0.372176,0.302893,0.286895,0.145355,0.302526,0.520212,0.502967,0.762489,0.603863,0.140376,0.29957,0.217427,0.363175,0.63176,0.559844,0.552863,0.30469,0.382362,0.966187,0.959189,0.892953,0.80282,0.724366,0.539729,0.76856,0.844741,0.350368,0.724437,0.691514,0.940314,0.910108,1.0,0.96365,0.889723,0.871613,0.886877,0.324997,0.324997,0.527824,0.570087,0.740147,0.347012,0.462202,-0.077055,0.437991,0.417859,0.056841,0.755109,0.662695,0.73671,0.813952,0.887258,0.705549,0.165901,0.531473],[-0.029449,0.013577,0.01084,0.035595,0.353388,0.31352,0.305048,0.170167,0.307181,0.517369,0.502461,0.734504,0.545679,0.162441,0.329551,0.237879,0.393763,0.639965,0.604131,0.559448,0.305194,0.342775,0.987222,0.953175,0.892426,0.82877,0.73198,0.539235,0.802327,0.865311,0.329325,0.712787,0.678238,0.950462,0.956725,0.96365,1.0,0.940456,0.927584,0.840779,0.310637,0.310637,0.489392,0.551473,0.780045,0.326571,0.469885,-0.05933,0.444805,0.395043,0.053441,0.741701,0.612521,0.655747,0.778649,0.852868,0.654447,0.135846,0.532152],[-0.02291,-0.057281,0.022443,0.067464,0.356979,0.322571,0.31379,0.16127,0.326801,0.517226,0.508849,0.717329,0.527528,0.173403,0.332965,0.240335,0.396216,0.635001,0.611308,0.544531,0.308478,0.350899,0.92004,0.910959,0.843245,0.783644,0.680046,0.531096,0.782322,0.827596,0.294499,0.677822,0.643218,0.889942,0.91862,0.889723,0.940456,1.0,0.954354,0.765191,0.350396,0.350396,0.434259,0.595542,0.828022,0.379496,0.456047,-0.041368,0.461448,0.394735,0.087176,0.695536,0.533445,0.592054,0.71877,0.774621,0.63204,0.152287,0.550943],[-0.019266,-0.057677,-0.027873,-0.001056,0.328132,0.282213,0.288874,0.146927,0.279074,0.494851,0.481821,0.737136,0.571956,0.101928,0.30196,0.173903,0.37211,0.620398,0.617138,0.547389,0.28697,0.324606,0.920401,0.939255,0.885978,0.805358,0.703581,0.569611,0.823818,0.848629,0.300469,0.716019,0.675877,0.906529,0.963916,0.871613,0.927584,0.954354,1.0,0.792311,0.311108,0.311108,0.433006,0.630723,0.809449,0.32372,0.488073,-0.094955,0.470017,0.453509,0.052953,0.72889,0.544485,0.605648,0.791151,0.822027,0.685666,0.178215,0.59219],[-0.108376,-0.000259,-0.026972,0.038051,0.376518,0.351775,0.325219,0.219806,0.343239,0.614375,0.573863,0.820599,0.682672,0.141357,0.314632,0.211815,0.37923,0.710119,0.615638,0.695887,0.343388,0.413153,0.857931,0.891073,0.833033,0.800361,0.747394,0.647576,0.768139,0.847765,0.469973,0.795623,0.780234,0.898158,0.827139,0.886877,0.840779,0.765191,0.792311,1.0,0.229266,0.229266,0.53079,0.600958,0.66138,0.348806,0.448176,-0.265129,0.405297,0.407091,0.125703,0.789913,0.724131,0.797626,0.869153,0.924525,0.815108,0.216003,0.553738],[0.338908,-0.119907,-0.276894,-0.194095,0.065312,-0.149552,-0.1115,-0.22803,-0.142872,-0.01795,-0.045729,0.322607,0.422809,-0.20368,-0.173177,-0.170152,-0.150809,0.0924,0.101088,0.203886,-0.222337,0.330848,0.350424,0.319301,0.282813,0.202697,0.235972,0.186237,0.322268,0.261284,0.129113,0.279732,0.26554,0.322523,0.322029,0.324997,0.310637,0.350396,0.311108,0.229266,1.0,1.0,0.651026,0.550963,0.443238,0.305833,0.292778,0.243082,-0.012012,0.346849,-0.067819,0.319004,0.24116,0.328795,0.336365,0.275194,0.390841,0.029768,0.3537],[0.338908,-0.119907,-0.276894,-0.194095,0.065312,-0.149552,-0.1115,-0.22803,-0.142872,-0.01795,-0.045729,0.322607,0.422809,-0.20368,-0.173177,-0.170152,-0.150809,0.0924,0.101088,0.203886,-0.222337,0.330848,0.350424,0.319301,0.282813,0.202697,0.235972,0.186237,0.322268,0.261284,0.129113,0.279732,0.26554,0.322523,0.322029,0.324997,0.310637,0.350396,0.311108,0.229266,1.0,1.0,0.651026,0.550963,0.443238,0.305833,0.292778,0.243082,-0.012012,0.346849,-0.067819,0.319004,0.24116,0.328795,0.336365,0.275194,0.390841,0.029768,0.3537],[0.372346,-0.023028,-0.28639,-0.271491,0.190191,-0.0766,-0.046069,-0.095432,-0.11309,0.143114,0.072963,0.491711,0.520145,-0.20478,0.061112,-0.151413,0.129241,0.297602,0.367597,0.401501,-0.067651,0.340769,0.537518,0.503419,0.425901,0.512166,0.411711,0.456172,0.581098,0.546009,0.40286,0.60766,0.570164,0.584144,0.471903,0.527824,0.489392,0.434259,0.433006,0.53079,0.651026,0.651026,1.0,0.630639,0.355,0.297478,0.476768,0.035976,0.264741,0.550199,0.126836,0.617543,0.509477,0.566173,0.534998,0.571711,0.581986,0.16306,0.388959],[0.19906,-0.10712,-0.239954,-0.218964,0.247301,0.050637,0.075794,-0.032584,0.024141,0.324206,0.263869,0.652382,0.636867,-0.173804,0.15513,-0.123362,0.236086,0.471643,0.50514,0.540081,0.146104,0.482607,0.57387,0.616246,0.530262,0.607482,0.506191,0.640119,0.688129,0.663208,0.36065,0.696458,0.671957,0.6534,0.593583,0.570087,0.551473,0.595542,0.630723,0.600958,0.550963,0.550963,0.630639,1.0,0.594889,0.428278,0.558561,-0.014504,0.42808,0.55069,0.215602,0.697622,0.436718,0.587244,0.659164,0.634874,0.693731,0.114964,0.648642],[-0.016874,-0.046453,0.133629,0.225852,0.409133,0.415405,0.405027,0.207603,0.430387,0.548029,0.553649,0.680094,0.42054,0.285828,0.392357,0.327163,0.423933,0.616978,0.579951,0.519098,0.340677,0.380934,0.770619,0.791684,0.754265,0.681847,0.579634,0.457607,0.639914,0.711913,0.175478,0.590439,0.570383,0.755881,0.783004,0.740147,0.780045,0.828022,0.809449,0.66138,0.443238,0.443238,0.355,0.594889,1.0,0.420105,0.384688,0.059475,0.346471,0.293271,0.096764,0.523232,0.353536,0.423072,0.592617,0.620547,0.515966,0.080747,0.519445],[0.074223,0.031309,0.249114,0.243102,0.551965,0.480621,0.489225,0.326459,0.385049,0.513872,0.452518,0.495034,0.432172,0.356101,0.307231,0.373127,0.318496,0.569766,0.41476,0.534497,0.505695,0.594789,0.305579,0.328039,0.242336,0.285901,0.153728,0.302258,0.280873,0.294844,0.226795,0.37201,0.353226,0.322197,0.2741,0.347012,0.326571,0.379496,0.32372,0.348806,0.305833,0.305833,0.297478,0.428278,0.420105,1.0,0.379219,0.044803,0.100636,0.119021,0.379833,0.34895,0.294215,0.269882,0.302796,0.296814,0.384622,-0.159812,0.462863],[0.15239,0.036375,-0.182687,-0.221327,0.219501,0.055406,0.07336,0.045946,0.007465,0.283257,0.227188,0.559353,0.56581,-0.139097,0.231054,-0.08269,0.325522,0.482757,0.537163,0.477866,0.142176,0.302209,0.471899,0.483469,0.432509,0.567699,0.461982,0.514894,0.591726,0.576967,0.131058,0.575146,0.520769,0.549418,0.482523,0.462202,0.469885,0.456047,0.488073,0.448176,0.292778,0.292778,0.476768,0.558561,0.384688,0.379219,1.0,0.020314,0.461565,0.44455,0.179837,0.6231,0.418929,0.412281,0.489323,0.520154,0.519049,0.043678,0.420457],[0.25002,0.125929,-0.010443,0.008446,-0.108646,-0.161116,-0.140124,-0.146013,-0.139274,-0.327821,-0.280786,-0.228748,-0.124887,-0.057407,-0.123825,-0.097834,-0.159978,-0.292373,-0.138087,-0.284388,-0.250109,-0.096767,-0.068364,-0.120252,-0.105744,-0.084124,-0.228776,-0.12281,-0.134939,-0.138879,-0.13116,-0.147623,-0.134689,-0.113176,-0.103352,-0.077055,-0.05933,-0.041368,-0.094955,-0.265129,0.243082,0.243082,0.035976,-0.014504,0.059475,0.044803,0.020314,1.0,-0.03878,-0.104818,0.056385,-0.206542,-0.150986,-0.184625,-0.183281,-0.192342,-0.194202,-0.071343,-0.077096],[-0.067501,0.161586,-0.066569,-0.157885,0.16573,0.095851,0.11472,0.134611,0.047408,0.259628,0.224657,0.374411,0.292569,-0.05969,0.247696,-0.017971,0.316906,0.400239,0.51229,0.343709,0.137257,0.131158,0.445254,0.468334,0.447841,0.556288,0.377399,0.527484,0.530202,0.550298,0.339265,0.532624,0.500616,0.516451,0.465617,0.437991,0.444805,0.461448,0.470017,0.405297,-0.012012,-0.012012,0.264741,0.42808,0.346471,0.100636,0.461565,-0.03878,1.0,0.393918,0.222712,0.597911,0.404919,0.448848,0.472031,0.497824,0.434642,0.298358,0.376049],[0.275368,-0.03367,-0.156294,-0.207291,0.270831,-0.002794,-0.010719,0.019932,-0.008887,0.185384,0.158183,0.427156,0.401304,-0.200485,0.185012,-0.172249,0.25697,0.322059,0.425231,0.322831,-0.046601,0.201386,0.421631,0.437462,0.354981,0.446291,0.361241,0.40621,0.577874,0.500817,0.179208,0.544346,0.467094,0.498777,0.413026,0.417859,0.395043,0.394735,0.453509,0.407091,0.346849,0.346849,0.550199,0.55069,0.293271,0.119021,0.44455,-0.104818,0.393918,1.0,0.341828,0.53951,0.291345,0.4995,0.527171,0.530591,0.552772,0.419295,0.424094],[-0.01399,0.127285,0.35908,0.302755,0.460817,0.379705,0.31606,0.379909,0.339432,0.358924,0.317925,0.135144,-0.038393,0.28151,0.504878,0.21893,0.502973,0.321295,0.388153,0.303176,0.228875,0.147992,0.030401,0.033869,-0.032726,0.11881,0.072303,0.2242,0.135532,0.141424,0.206142,0.249271,0.226256,0.110192,-0.002803,0.056841,0.053441,0.087176,0.052953,0.125703,-0.067819,-0.067819,0.126836,0.215602,0.096764,0.379833,0.179837,0.056385,0.222712,0.341828,1.0,0.103974,-0.000186,0.112924,0.052632,0.141517,0.09311,0.268434,0.026338],[0.067404,-0.011761,-0.309609,-0.354541,0.177723,0.013666,0.030684,-0.013907,-0.045492,0.352245,0.262281,0.705487,0.671224,-0.224117,0.096774,-0.139655,0.204159,0.574783,0.5918,0.600729,0.134818,0.365944,0.753945,0.779124,0.735384,0.757763,0.58968,0.675949,0.777629,0.781566,0.488917,0.795229,0.757588,0.806953,0.749742,0.755109,0.741701,0.695536,0.72889,0.789913,0.319004,0.319004,0.617543,0.697622,0.523232,0.34895,0.6231,-0.206542,0.597911,0.53951,0.103974,1.0,0.762355,0.763018,0.81718,0.833085,0.785136,0.227884,0.658563],[-0.066341,-0.077348,-0.229263,-0.234502,0.156949,0.034201,0.051924,-0.035365,-0.015136,0.265263,0.19991,0.536412,0.505339,-0.106804,0.031133,-0.024683,0.109452,0.446594,0.398041,0.461173,0.124746,0.318957,0.629112,0.665058,0.69865,0.548068,0.503194,0.491287,0.53869,0.577059,0.472629,0.601686,0.592091,0.637507,0.59843,0.662695,0.612521,0.533445,0.544485,0.724131,0.24116,0.24116,0.509477,0.436718,0.353536,0.294215,0.418929,-0.150986,0.404919,0.291345,-0.000186,0.762355,1.0,0.69525,0.665867,0.726517,0.594495,0.135685,0.44923],[0.060759,0.041821,-0.268022,-0.182043,0.208944,0.061305,0.040435,-0.030847,0.084094,0.352663,0.316947,0.614896,0.680325,-0.137954,0.048924,-0.062687,0.120102,0.46001,0.398781,0.491746,0.114236,0.400722,0.677913,0.712807,0.640942,0.627082,0.581755,0.536912,0.673555,0.686054,0.427532,0.661842,0.627271,0.724727,0.634026,0.73671,0.655747,0.592054,0.605648,0.797626,0.328795,0.328795,0.566173,0.587244,0.423072,0.269882,0.412281,-0.184625,0.448848,0.4995,0.112924,0.763018,0.69525,1.0,0.860649,0.858614,0.834242,0.45907,0.537592],[0.04086,0.006749,-0.182361,-0.163338,0.264777,0.158271,0.168107,0.086889,0.148898,0.43271,0.397999,0.773412,0.762334,-0.062173,0.175265,0.023183,0.258258,0.573433,0.532935,0.570879,0.196251,0.412363,0.803512,0.852361,0.819622,0.753298,0.688853,0.587257,0.794124,0.809569,0.404115,0.7405,0.698065,0.846561,0.817637,0.813952,0.778649,0.71877,0.791151,0.869153,0.336365,0.336365,0.534998,0.659164,0.592617,0.302796,0.489323,-0.183281,0.472031,0.527171,0.052632,0.81718,0.665867,0.860649,1.0,0.934028,0.903218,0.272333,0.669439],[-0.016181,0.026641,-0.101471,-0.085836,0.300834,0.240505,0.233904,0.166485,0.227155,0.498992,0.465481,0.773685,0.681204,0.007159,0.280816,0.075173,0.362056,0.62437,0.621408,0.612075,0.232562,0.362133,0.870707,0.901341,0.853518,0.823311,0.767051,0.688387,0.830248,0.880732,0.473102,0.843928,0.810653,0.925185,0.859333,0.887258,0.852868,0.774621,0.822027,0.924525,0.275194,0.275194,0.571711,0.634874,0.620547,0.296814,0.520154,-0.192342,0.497824,0.530591,0.141517,0.833085,0.726517,0.858614,0.934028,1.0,0.852644,0.301437,0.591596],[0.10284,-0.01771,-0.227297,-0.182965,0.269984,0.148879,0.147792,0.084248,0.13951,0.449178,0.399528,0.811825,0.857871,-0.101324,0.10843,-0.019813,0.189321,0.592962,0.539402,0.630457,0.20674,0.480791,0.684079,0.734709,0.662224,0.678991,0.639997,0.632872,0.745072,0.74244,0.432812,0.748045,0.709936,0.75851,0.693227,0.705549,0.654447,0.63204,0.685666,0.815108,0.390841,0.390841,0.581986,0.693731,0.515966,0.384622,0.519049,-0.194202,0.434642,0.552772,0.09311,0.785136,0.594495,0.834242,0.903218,0.852644,1.0,0.266757,0.670511],[0.009859,0.007091,-0.136789,-0.111509,0.038461,-0.108943,-0.182224,-0.042764,-0.045784,0.002671,0.013083,0.076936,0.065363,-0.138059,0.035328,-0.112126,0.05562,0.045189,0.122809,0.019823,-0.130218,-0.086263,0.136739,0.171434,0.126955,0.172803,0.09723,0.14674,0.22304,0.197507,0.094948,0.224246,0.193009,0.196746,0.141206,0.165901,0.135846,0.152287,0.178215,0.216003,0.029768,0.029768,0.16306,0.114964,0.080747,-0.159812,0.043678,-0.071343,0.298358,0.419295,0.268434,0.227884,0.135685,0.45907,0.272333,0.301437,0.266757,1.0,-0.049573],[0.149492,-0.057185,-0.239574,-0.219209,0.188126,0.066639,0.150548,-0.059023,0.022644,0.284857,0.240824,0.620373,0.615594,-0.116036,0.013349,-0.031961,0.097185,0.445696,0.423771,0.454633,0.182617,0.436536,0.551007,0.605544,0.576382,0.507182,0.378293,0.475781,0.573188,0.54256,0.219259,0.531171,0.485019,0.569254,0.585656,0.531473,0.532152,0.550943,0.59219,0.553738,0.3537,0.3537,0.388959,0.648642,0.519445,0.462863,0.420457,-0.077096,0.376049,0.424094,0.026338,0.658563,0.44923,0.537592,0.669439,0.591596,0.670511,-0.049573,1.0]],"presets":{"teaching":{"label":"Teaching 10","note":"Broad, roughly non-overlapping classes. The default.","assets":["U.S. Cash","U.S. Intermediate Treasuries","U.S. Aggregate Bonds","U.S. High Yield Bonds","U.S. Large Cap","U.S. Small Cap","EAFE Equity","Emerging Markets Equity","U.S. REITs","Commodities"]},"idzorek":{"label":"Idzorek-style 9","note":"Closest J.P. Morgan match to Idzorek's nine-class opportunity set. The value and size factors overlap U.S. Large Cap, which is exactly the near-duplicate-asset setup that makes MVO pick corners.","assets":["U.S. Large Cap","U.S. Equity Value Factor","U.S. Mid Cap","U.S. Small Cap","EAFE Equity","U.S. Aggregate Bonds","World ex-U.S. Government Bonds","Commodities","U.S. Cash"]},"broad":{"label":"JPM broad 16","note":"Wider menu spanning all three groups, including private assets.","assets":["U.S. Cash","U.S. Intermediate Treasuries","U.S. Long Treasuries","TIPS","U.S. Aggregate Bonds","U.S. High Yield Bonds","Emerging Markets Sovereign Debt","U.S. Large Cap","U.S. Small Cap","EAFE Equity","Emerging Markets Equity","U.S. Core Real Estate","Global Core Infrastructure","Commodities","Gold","Private Equity"]},"all":{"label":"All 58","note":"Every investable J.P. Morgan class. The covariance matrix is badly conditioned here.","assets":["U.S. Cash","U.S. Intermediate Treasuries","U.S. Long Treasuries","TIPS","U.S. Aggregate Bonds","U.S. Securitized","U.S. Short Duration Government/Credit","U.S. Long Duration Government/Credit","U.S. Inv Grade Corporate Bonds","U.S. Long Corporate Bonds","U.S. High Yield Bonds","U.S. Leveraged Loans","World Government Bonds hedged","World Government Bonds","World ex-U.S. Government Bonds hedged","World ex-U.S. Government Bonds","Emerging Markets Sovereign Debt","Emerging Markets Local Currency Debt","Emerging Markets Corporate Bonds","U.S. Muni 1-15 Yr Blend","U.S. Muni High Yield","U.S. Large Cap","U.S. Mid Cap","U.S. Small Cap","Euro Area Large Cap","Japanese Equity","Hong Kong Equity","UK Large Cap","EAFE Equity","Chinese Domestic Equity","Emerging Markets Equity","AC Asia ex-Japan Equity","AC World Equity","U.S. Equity Value Factor","U.S. Equity Momentum Factor","U.S. Equity Quality Factor","U.S. Equity Minimum Volatility Factor","U.S. Equity Dividend Yield Factor","Global Convertible Bonds hedged","U.S. Core Real Estate","U.S. Value-Added Real Estate","European Core Real Estate","Asia Pacific Core Real Estate","U.S. REITs","Commercial Mortgage Loans","Global Core Infrastructure","Global Core Transport","Global Timberland","Commodities","Gold","Private Equity","Venture Capital","Diversified Hedge Funds","Event Driven Hedge Funds","Long Bias Hedge Funds","Relative Value Hedge Funds","Macro Hedge Funds","Direct Lending"]}}};
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ * 1. Asset metadata and colors
+ * ------------------------------------------------------------------ */
+
+const ASSETS = DATA.assets;
+const CORR = DATA.corr;
+const N_ALL = ASSETS.length;
+const RF_IDX = ASSETS.findIndex(a => a.name === DATA.meta.riskFreeAsset);
+const GROUPS = ["Fixed Income", "Equities", "Alternatives"];
+const GROUP_HUE = { "Fixed Income": [196, 248], "Equities": [6, 46], "Alternatives": [96, 300] };
+
+// Stable color per asset: hue walks across the group's band so neighbouring
+// bands in the stacked area chart stay distinguishable.
+const COLOR = new Array(N_ALL);
+GROUPS.forEach(g => {
+  const members = ASSETS.map((a, i) => [a, i]).filter(([a]) => a.group === g);
+  members.forEach(([, i], k) => {
+    const [h0, h1] = GROUP_HUE[g];
+    const t = members.length > 1 ? k / (members.length - 1) : 0;
+    const h = h0 + (h1 - h0) * t;
+    const l = 38 + 15 * (k % 3);
+    const s = 48 + 18 * (k % 2);
+    COLOR[i] = `hsl(${h.toFixed(0)} ${s}% ${l}%)`;
+  });
+});
+
+function shortName(name) {
+  return name
+    .replace(/^U\.S\. /, "US ")
+    .replace(/Government\/Credit/, "Gov/Cr")
+    .replace(/Government Bonds/, "Gov Bonds")
+    .replace(/Emerging Markets/, "EM")
+    .replace(/ Treasuries/, " Treas")
+    .replace(/Intermediate/, "Interm")
+    .replace(/Inv Grade Corporate Bonds/, "IG Corp")
+    .replace(/Hedge Funds/, "HF")
+    .replace(/Real Estate/, "RE")
+    .replace(/ Equity Value Factor/, " Value Fctr")
+    .replace(/ Equity Momentum Factor/, " Mom Fctr")
+    .replace(/ Equity Quality Factor/, " Quality Fctr")
+    .replace(/ Equity Minimum Volatility Factor/, " MinVol Fctr")
+    .replace(/ Equity Dividend Yield Factor/, " Div Fctr")
+    .replace(/Infrastructure/, "Infra");
+}
+
+/* ------------------------------------------------------------------ *
+ * 2. Linear algebra
+ * ------------------------------------------------------------------ */
+
+function matVec(A, x) {
+  const n = A.length, out = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const Ai = A[i];
+    let s = 0;
+    for (let j = 0; j < n; j++) s += Ai[j] * x[j];
+    out[i] = s;
+  }
+  return out;
+}
+function dot(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+function quad(A, x) { return dot(x, matVec(A, x)); }
+
+// Largest eigenvalue by power iteration; used only for the gradient step size.
+function eigMax(A, iters = 300) {
+  const n = A.length;
+  let v = new Float64Array(n).fill(1 / Math.sqrt(n)), lam = 0;
+  for (let k = 0; k < iters; k++) {
+    const w = matVec(A, v);
+    let nrm = 0;
+    for (let i = 0; i < n; i++) nrm += w[i] * w[i];
+    nrm = Math.sqrt(nrm);
+    if (nrm === 0) return 0;
+    for (let i = 0; i < n; i++) v[i] = w[i] / nrm;
+    lam = nrm;
+  }
+  return lam;
+}
+function eigMin(A, iters = 400) {
+  const n = A.length;
+  let c = 0;
+  for (let i = 0; i < n; i++) {
+    let s = 0;
+    for (let j = 0; j < n; j++) s += Math.abs(A[i][j]);
+    c = Math.max(c, s);
+  }
+  const B = A.map((row, i) => row.map((v, j) => (i === j ? c : 0) - v));
+  return c - eigMax(B, iters);
+}
+
+// Cholesky with jitter retry; returns lower-triangular L or null.
+function cholesky(A) {
+  const n = A.length;
+  let trace = 0;
+  for (let i = 0; i < n; i++) trace += A[i][i];
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const jit = attempt === 0 ? 0 : (trace / n) * Math.pow(10, -10 + attempt);
+    const L = Array.from({ length: n }, () => new Float64Array(n));
+    let ok = true;
+    for (let i = 0; i < n && ok; i++) {
+      for (let j = 0; j <= i; j++) {
+        let s = A[i][j] + (i === j ? jit : 0);
+        for (let k = 0; k < j; k++) s -= L[i][k] * L[j][k];
+        if (i === j) {
+          if (s <= 0) { ok = false; break; }
+          L[i][i] = Math.sqrt(s);
+        } else {
+          L[i][j] = s / L[j][j];
+        }
+      }
+    }
+    if (ok) return L;
+  }
+  return null;
+}
+
+// Gauss-Jordan inverse with partial pivoting.
+function inverse(A) {
+  const n = A.length;
+  const M = A.map((row, i) => {
+    const r = new Float64Array(2 * n);
+    for (let j = 0; j < n; j++) r[j] = row[j];
+    r[n + i] = 1;
+    return r;
+  });
+  for (let c = 0; c < n; c++) {
+    let p = c;
+    for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (Math.abs(M[p][c]) < 1e-14) return null;
+    [M[c], M[p]] = [M[p], M[c]];
+    const pv = M[c][c];
+    for (let j = 0; j < 2 * n; j++) M[c][j] /= pv;
+    for (let r = 0; r < n; r++) {
+      if (r === c) continue;
+      const f = M[r][c];
+      if (f === 0) continue;
+      for (let j = 0; j < 2 * n; j++) M[r][j] -= f * M[c][j];
+    }
+  }
+  return M.map(r => Array.from(r.slice(n)));
+}
+
+/* ------------------------------------------------------------------ *
+ * 3. Constrained quadratic program
+ *
+ *   maximize  mu'w - (gamma/2) w'Sigma w
+ *   subject to  sum(w) = 1,  lo_i <= w_i <= hi_i
+ *
+ * Solved by accelerated projected gradient. The projection onto the
+ * box-truncated simplex is a one-dimensional root find: the solution has
+ * the form w_i = clamp(v_i - tau, lo_i, hi_i) and sum(w) decreases
+ * monotonically in tau, so tau comes from bisection.
+ * ------------------------------------------------------------------ */
+
+function projectBoxSimplex(v, lo, hi) {
+  const n = v.length;
+  let a = Infinity, b = -Infinity;
+  for (let i = 0; i < n; i++) {
+    a = Math.min(a, v[i] - hi[i]);
+    b = Math.max(b, v[i] - lo[i]);
+  }
+  a -= 1; b += 1;
+  const sumAt = tau => {
+    let s = 0;
+    for (let i = 0; i < n; i++) s += Math.min(hi[i], Math.max(lo[i], v[i] - tau));
+    return s;
+  };
+  for (let k = 0; k < 70; k++) {
+    const m = 0.5 * (a + b);
+    if (sumAt(m) > 1) a = m; else b = m;
+  }
+  const tau = 0.5 * (a + b);
+  const w = new Float64Array(n);
+  for (let i = 0; i < n; i++) w[i] = Math.min(hi[i], Math.max(lo[i], v[i] - tau));
+  return w;
+}
+
+function solveQP(mu, S, gamma, lo, hi, w0, eigS, iters) {
+  const n = mu.length;
+  const L = Math.max(gamma * eigS, 1e-9);
+  let w = Float64Array.from(w0), wPrev = Float64Array.from(w0), y = Float64Array.from(w0), t = 1;
+  const v = new Float64Array(n);
+  for (let k = 0; k < iters; k++) {
+    const Sy = matVec(S, y);
+    for (let i = 0; i < n; i++) v[i] = y[i] - (gamma * Sy[i] - mu[i]) / L;
+    const wn = projectBoxSimplex(v, lo, hi);
+    let diff = 0;
+    for (let i = 0; i < n; i++) diff += Math.abs(wn[i] - w[i]);
+    const tn = (1 + Math.sqrt(1 + 4 * t * t)) / 2;
+    wPrev = w; w = wn;
+    for (let i = 0; i < n; i++) y[i] = w[i] + ((t - 1) / tn) * (w[i] - wPrev[i]);
+    t = tn;
+    if (diff < 1e-10 && k > 30) break;
+  }
+  // Clean numerical dust so "zero weight" means zero.
+  let s = 0;
+  for (let i = 0; i < n; i++) { if (Math.abs(w[i]) < 1e-7) w[i] = 0; s += w[i]; }
+  if (s !== 0) for (let i = 0; i < n; i++) w[i] /= s;
+  return w;
+}
+
+const N_FRONTIER = 101;
+const GAMMA_HI = 200, GAMMA_LO = 2e-3;
+const GAMMAS = Array.from({ length: N_FRONTIER }, (_, k) =>
+  Math.exp(Math.log(GAMMA_HI) + (Math.log(GAMMA_LO) - Math.log(GAMMA_HI)) * (k / (N_FRONTIER - 1))));
+
+// Sweep risk aversion from high (minimum variance) to low (maximum return).
+// Each solve warm-starts from the previous one, which is what makes this fast
+// enough to re-run on every slider move.
+function frontier(mu, S, lo, hi, gammas, eigS, iters) {
+  const n = mu.length;
+  const gs = gammas || GAMMAS;
+  const e = eigS != null ? eigS : eigMax(S);
+  const it = iters || [4000, 900];
+  let w0 = projectBoxSimplex(new Float64Array(n).fill(1 / n), lo, hi);
+  const out = [];
+  for (let k = 0; k < gs.length; k++) {
+    const w = solveQP(mu, S, gs[k], lo, hi, w0, e, k === 0 ? it[0] : it[1]);
+    w0 = w;
+    const ret = dot(w, mu);
+    out.push({ gamma: gs[k], w, ret, sd: Math.sqrt(Math.max(0, quad(S, w))) });
+  }
+  return out;
+}
+
+function riskParity(S, iters = 3000) {
+  const n = S.length;
+  let w = new Float64Array(n);
+  for (let i = 0; i < n; i++) w[i] = 1 / Math.sqrt(S[i][i]);
+  let s = 0; for (let i = 0; i < n; i++) s += w[i];
+  for (let i = 0; i < n; i++) w[i] /= s;
+  for (let k = 0; k < iters; k++) {
+    const Sw = matVec(S, w);
+    let tot = 0;
+    for (let i = 0; i < n; i++) { w[i] = Sw[i] > 0 ? (1 / n) / Sw[i] : 0; tot += w[i]; }
+    for (let i = 0; i < n; i++) w[i] /= tot;
+  }
+  return w;
+}
+function inverseVol(S) {
+  const n = S.length, w = new Float64Array(n);
+  let s = 0;
+  for (let i = 0; i < n; i++) { w[i] = 1 / Math.sqrt(S[i][i]); s += w[i]; }
+  for (let i = 0; i < n; i++) w[i] /= s;
+  return w;
+}
+
+/* ------------------------------------------------------------------ *
+ * 4. Random numbers
+ * ------------------------------------------------------------------ */
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function makeNormal(rng) {
+  let spare = null;
+  return function () {
+    if (spare !== null) { const s = spare; spare = null; return s; }
+    let u, v, s;
+    do { u = 2 * rng() - 1; v = 2 * rng() - 1; s = u * u + v * v; } while (s === 0 || s >= 1);
+    const f = Math.sqrt(-2 * Math.log(s) / s);
+    spare = v * f;
+    return u * f;
+  };
+}
+// Draw T observations from N(mu, S) and return the sample mean and covariance.
+function sampleCMA(mu, L, T, nrm) {
+  const n = mu.length;
+  const mean = new Float64Array(n);
+  const obs = [];
+  for (let t = 0; t < T; t++) {
+    const z = new Float64Array(n);
+    for (let i = 0; i < n; i++) z[i] = nrm();
+    const x = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      let s = mu[i];
+      for (let k = 0; k <= i; k++) s += L[i][k] * z[k];
+      x[i] = s;
+      mean[i] += s / T;
+    }
+    obs.push(x);
+  }
+  const cov = Array.from({ length: n }, () => new Float64Array(n));
+  for (const x of obs) {
+    for (let i = 0; i < n; i++) {
+      const di = x[i] - mean[i];
+      for (let j = 0; j <= i; j++) cov[i][j] += di * (x[j] - mean[j]) / (T - 1);
+    }
+  }
+  for (let i = 0; i < n; i++) for (let j = 0; j < i; j++) cov[j][i] = cov[i][j];
+  return { mu: mean, S: cov };
+}
+
+/* ------------------------------------------------------------------ *
+ * 5. Portfolio diagnostics
+ * ------------------------------------------------------------------ */
+
+const WEIGHT_EPS = 0.005;
+
+function nHeld(w) { let c = 0; for (let i = 0; i < w.length; i++) if (Math.abs(w[i]) > WEIGHT_EPS) c++; return c; }
+function effN(w) { let s = 0; for (let i = 0; i < w.length; i++) s += w[i] * w[i]; return s > 0 ? 1 / s : 0; }
+function dispersion(w) {
+  const n = w.length;
+  let s = 0;
+  for (let i = 0; i < n; i++) { const d = w[i] - 1 / n; s += d * d; }
+  return Math.sqrt(s);
+}
+function frontierMetrics(fr) {
+  const n = fr[0].w.length;
+  let held = 0, disp = 0, eff = 0;
+  for (const p of fr) { held += nHeld(p.w); disp += dispersion(p.w); eff += effN(p.w); }
+  const m = fr.length;
+  return {
+    avgHeld: held / m,
+    pctHeld: held / m / n,
+    avgNonZero: held > 0 ? m / held : 0,
+    disp: disp / m,
+    effN: eff / m
+  };
+}
+function turnover(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]); return s / 2; }
+function nearestOn(fr, targetSd) {
+  let best = 0, bd = Infinity;
+  for (let i = 0; i < fr.length; i++) {
+    const d = Math.abs(fr[i].sd - targetSd);
+    if (d < bd) { bd = d; best = i; }
+  }
+  return fr[best];
+}
+function maxSharpe(fr, rf) {
+  let best = null, bs = -Infinity;
+  for (const p of fr) {
+    if (p.sd < 1e-8) continue;
+    const s = (p.ret - rf) / p.sd;
+    if (s > bs) { bs = s; best = p; }
+  }
+  return best ? { ...best, sharpe: bs } : null;
+}
+/* ------------------------------------------------------------------ *
+ * 6. Application state and the current universe
+ * ------------------------------------------------------------------ */
+
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+const state = {
+  basis: "arith2026",
+  constraint: "long",
+  bound: 0.5,
+  cap: 0.25,
+  selected: new Set(),
+  tab: "frontier",
+  areaX: "sd",
+  showAssets: true,
+  showTangency: true,
+  showVintage: false,
+  showCorners: true,
+  targetFrac: 0.30,
+  targetPos: 0,
+  errT: 20,
+  errTargetFrac: 0.30,
+  errTargetPos: 0,
+  shocks: new Map(),      // global asset index -> shock in standard errors
+  errPattern: new Map(),  // global asset index -> fixed +/-1 direction
+  czResult: null,
+  spagResult: null,
+  blRef: "equal",
+  blAuto: true,
+  blMrp: 4.0,
+  customRef: new Map(),
+  views: [],
+  robTargetFrac: 0.30,
+  robTargetPos: 0,
+  rsResult: null,
+  methodsOn: new Set(["jpm", "bl", "rsJpm", "rsBl", "rp", "mv"])
+};
+
+DATA.presets.teaching.assets.forEach(n => state.selected.add(ASSETS.findIndex(a => a.name === n)));
+
+function retOf(i) { return ASSETS[i][state.basis]; }
+function altBasis() { return state.basis === "compound2025" ? "arith2026" : "compound2025"; }
+
+// Everything downstream reads this object: the selected indices in display
+// order plus the expected returns, covariance matrix and weight bounds.
+function buildUniverse(basis, shocks) {
+  const idx = Array.from(state.selected).sort((a, b) => a - b);
+  const n = idx.length;
+  const b = basis || state.basis;
+  const mu = new Float64Array(n), vol = new Float64Array(n);
+  for (let k = 0; k < n; k++) {
+    vol[k] = ASSETS[idx[k]].vol;
+    let m = ASSETS[idx[k]][b];
+    if (shocks && shocks.has(idx[k])) m += shocks.get(idx[k]) * vol[k] / Math.sqrt(state.errT);
+    mu[k] = m;
+  }
+  const S = Array.from({ length: n }, () => new Float64Array(n));
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j < n; j++)
+      S[i][j] = CORR[idx[i]][idx[j]] * vol[i] * vol[j];
+  let lo, hi;
+  if (state.constraint === "short") {
+    lo = new Float64Array(n).fill(-state.bound);
+    hi = new Float64Array(n).fill(1 + state.bound);
+  } else if (state.constraint === "capped") {
+    lo = new Float64Array(n).fill(0);
+    hi = new Float64Array(n).fill(Math.max(state.cap, 1 / n));
+  } else {
+    lo = new Float64Array(n).fill(0);
+    hi = new Float64Array(n).fill(1);
+  }
+  const rfPos = idx.indexOf(RF_IDX);
+  return {
+    idx, n, mu, vol, S, lo, hi,
+    eigS: eigMax(S),
+    rf: ASSETS[RF_IDX][b],
+    hasCash: rfPos >= 0,
+    names: idx.map(i => ASSETS[i].name),
+    shorts: idx.map(i => shortName(ASSETS[i].name)),
+    colors: idx.map(i => COLOR[i])
+  };
+}
+
+let U = null, FR = null, FR_ALT = null;
+
+/* ------------------------------------------------------------------ *
+ * 7. SVG chart helper
+ * ------------------------------------------------------------------ */
+
+const NS = "http://www.w3.org/2000/svg";
+function svg(tag, attrs, text) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  return e;
+}
+function niceTicks(lo, hi, count) {
+  if (!(hi > lo)) return [lo];
+  const raw = (hi - lo) / Math.max(1, count);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || 10 * mag;
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-9; v += step) out.push(+v.toFixed(10));
+  return out;
+}
+const fmtPct = (v, d = 1) => `${v.toFixed(d)}%`;
+const fmtNum = (v, d = 2) => v.toFixed(d);
+const fmtW = v => `${(v * 100).toFixed(1)}%`;
+
+function Chart(host, opts) {
+  const o = Object.assign({ margin: { t: 14, r: 16, b: 38, l: 52 }, xTickCount: 7, yTickCount: 6 }, opts);
+  host.innerHTML = "";
+  const W = Math.max(320, host.clientWidth), H = Math.max(180, host.clientHeight);
+  const m = o.margin;
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const root = svg("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+  host.appendChild(root);
+
+  let [x0, x1] = o.xd, [y0, y1] = o.yd;
+  if (x1 === x0) x1 = x0 + 1;
+  if (y1 === y0) y1 = y0 + 1;
+  const X = v => m.l + ((v - x0) / (x1 - x0)) * iw;
+  const Y = v => m.t + ih - ((v - y0) / (y1 - y0)) * ih;
+
+  const grid = svg("g"), body = svg("g"), fg = svg("g");
+  root.appendChild(grid); root.appendChild(body); root.appendChild(fg);
+
+  const xT = o.xTicks || niceTicks(x0, x1, o.xTickCount);
+  const yT = o.yTicks || niceTicks(y0, y1, o.yTickCount);
+  for (const v of yT) {
+    if (v < y0 - 1e-9 || v > y1 + 1e-9) continue;
+    grid.appendChild(svg("line", { class: "gridline", x1: m.l, x2: m.l + iw, y1: Y(v), y2: Y(v) }));
+    grid.appendChild(svg("text", { class: "axis-label", x: m.l - 6, y: Y(v) + 3, "text-anchor": "end" },
+      (o.yFmt || fmtPct)(v)));
+  }
+  for (const v of xT) {
+    if (v < x0 - 1e-9 || v > x1 + 1e-9) continue;
+    grid.appendChild(svg("line", { class: "gridline", x1: X(v), x2: X(v), y1: m.t, y2: m.t + ih, opacity: .55 }));
+    grid.appendChild(svg("text", { class: "axis-label", x: X(v), y: m.t + ih + 14, "text-anchor": "middle" },
+      (o.xFmt || fmtPct)(v)));
+  }
+  if (o.xTitle) grid.appendChild(svg("text", { class: "axis-title", x: m.l + iw / 2, y: H - 4, "text-anchor": "middle" }, o.xTitle));
+  if (o.yTitle) grid.appendChild(svg("text", {
+    class: "axis-title", x: 0, y: 0, "text-anchor": "middle",
+    transform: `translate(11,${m.t + ih / 2}) rotate(-90)`
+  }, o.yTitle));
+
+  const tip = document.createElement("div");
+  tip.className = "tooltip";
+  host.appendChild(tip);
+
+  return {
+    root, body, fg, X, Y, W, H, iw, ih, m, tip,
+    xd: [x0, x1], yd: [y0, y1],
+    add(e) { body.appendChild(e); return e; },
+    front(e) { fg.appendChild(e); return e; },
+    path(pts, attrs) {
+      const d = pts.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(2)},${Y(p[1]).toFixed(2)}`).join("");
+      return this.add(svg("path", Object.assign({ class: "series-path", d }, attrs)));
+    },
+    clipRect() {
+      return svg("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "none" });
+    },
+    // Pointer tracking over the plot area; cb receives data-space x and y.
+    track(cb) {
+      const hit = svg("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent" });
+      fg.appendChild(hit);
+      const toData = ev => {
+        const r = root.getBoundingClientRect();
+        const px = (ev.clientX - r.left) * (W / r.width);
+        const py = (ev.clientY - r.top) * (H / r.height);
+        return [x0 + ((px - m.l) / iw) * (x1 - x0), y0 + ((m.t + ih - py) / ih) * (y1 - y0), px, py];
+      };
+      hit.addEventListener("pointermove", ev => cb(...toData(ev), tip, host));
+      hit.addEventListener("pointerleave", () => { tip.style.display = "none"; cb(null); });
+      return hit;
+    },
+    showTip(html, px, py) {
+      tip.innerHTML = html;
+      tip.style.display = "block";
+      const r = host.getBoundingClientRect();
+      const tw = tip.offsetWidth, th = tip.offsetHeight;
+      let left = px * (r.width / W) + 12, top = py * (r.height / H) - th - 10;
+      if (left + tw > r.width) left = px * (r.width / W) - tw - 12;
+      if (top < 0) top = py * (r.height / H) + 14;
+      tip.style.left = `${left}px`;
+      tip.style.top = `${top}px`;
+    }
+  };
+}
+
+function swatchHTML(color) {
+  return `<span class="swatch" style="background:${color}"></span>`;
+}
+/* ------------------------------------------------------------------ *
+ * 8. Frontier chart
+ * ------------------------------------------------------------------ */
+
+function drawFrontier(host, specs, opts) {
+  const o = opts || {};
+  let xMax = 0, yMin = Infinity, yMax = -Infinity;
+  const consider = (sd, r) => { xMax = Math.max(xMax, sd); yMin = Math.min(yMin, r); yMax = Math.max(yMax, r); };
+  for (const s of specs) {
+    if (s.fr) for (const p of s.fr) consider(p.sd, p.ret);
+    if (s.points) for (const p of s.points) consider(p.sd, p.ret);
+  }
+  if (!isFinite(yMin)) { yMin = 0; yMax = 1; }
+  const pad = (yMax - yMin) * 0.12 || 1;
+  const c = Chart(host, {
+    xd: [0, xMax * 1.08],
+    yd: [Math.max(0, yMin - pad), yMax + pad],
+    xTitle: "Annualized volatility",
+    yTitle: "Expected return",
+    margin: { t: 14, r: 18, b: 40, l: 54 }
+  });
+
+  // Capital allocation line through the tangency portfolio.
+  if (o.cal && o.rf != null) {
+    const sl = (o.cal.ret - o.rf) / o.cal.sd;
+    c.add(svg("line", {
+      x1: c.X(0), y1: c.Y(o.rf), x2: c.X(c.xd[1]), y2: c.Y(o.rf + sl * c.xd[1]),
+      stroke: "var(--muted)", "stroke-width": 1, "stroke-dasharray": "5,4", opacity: .8
+    }));
+  }
+
+  for (const s of specs) {
+    if (!s.fr) continue;
+    c.path(s.fr.map(p => [p.sd, p.ret]), {
+      stroke: s.color, "stroke-width": s.width || 2,
+      "stroke-dasharray": s.dash || null, opacity: s.opacity != null ? s.opacity : 1
+    });
+  }
+
+  // Individual asset classes.
+  const dots = [];
+  for (const s of specs) {
+    if (!s.points) continue;
+    for (const p of s.points) {
+      c.add(svg("circle", { cx: c.X(p.sd), cy: c.Y(p.ret), r: 3.6, fill: p.color, stroke: "var(--card)", "stroke-width": 1 }));
+      dots.push(p);
+      if (s.label) {
+        c.add(svg("text", {
+          class: "axis-label", x: c.X(p.sd) + 6, y: c.Y(p.ret) + 3, fill: "var(--ink)", "font-size": 9
+        }, p.name));
+      }
+    }
+  }
+
+  if (o.tangency) {
+    const t = o.tangency;
+    c.front(svg("circle", { cx: c.X(t.sd), cy: c.Y(t.ret), r: 5.5, fill: "none", stroke: "var(--accent)", "stroke-width": 2 }));
+    c.front(svg("text", {
+      class: "axis-label", x: c.X(t.sd), y: c.Y(t.ret) - 10, "text-anchor": "middle",
+      fill: "var(--accent)", "font-size": 9.5
+    }, `max Sharpe ${t.sharpe.toFixed(2)}`));
+  }
+  if (o.marker) {
+    c.front(svg("circle", { cx: c.X(o.marker.sd), cy: c.Y(o.marker.ret), r: 4.5, fill: "var(--ink)" }));
+  }
+
+  // Hover: nearest asset dot, else the frontier portfolio at this volatility.
+  const main = specs.find(s => s.fr && s.primary) || specs.find(s => s.fr);
+  c.track((dx, dy, px, py) => {
+    if (dx == null) return;
+    let best = null, bd = Infinity;
+    for (const p of dots) {
+      const d = Math.hypot(c.X(p.sd) - px, c.Y(p.ret) - py);
+      if (d < bd) { bd = d; best = p; }
+    }
+    if (best && bd < 14) {
+      c.showTip(
+        `<div class="tt-date">${swatchHTML(best.color)} ${best.name}</div>` +
+        `Expected return ${fmtPct(best.ret, 2)}<br>Volatility ${fmtPct(best.sd, 2)}` +
+        (o.rf != null && best.sd > 0 ? `<br>Sharpe ${((best.ret - o.rf) / best.sd).toFixed(3)}` : ""),
+        px, py);
+      return;
+    }
+    if (!main) { c.tip.style.display = "none"; return; }
+    const p = nearestOn(main.fr, dx);
+    const held = Array.from(p.w).map((w, i) => [w, i]).filter(([w]) => Math.abs(w) > WEIGHT_EPS)
+      .sort((a, b) => Math.abs(b[0]) - Math.abs(a[0])).slice(0, 7);
+    c.showTip(
+      `<div class="tt-date">Frontier portfolio</div>` +
+      `Return ${fmtPct(p.ret, 2)} &nbsp; Vol ${fmtPct(p.sd, 2)}<br>` +
+      held.map(([w, i]) => `<div class="tt-row">${swatchHTML(U.colors[i])} ${U.shorts[i]} ${fmtW(w)}</div>`).join("") +
+      (nHeld(p.w) > 7 ? `<div class="tt-row">+${nHeld(p.w) - 7} more</div>` : ""),
+      px, py);
+  });
+  return c;
+}
+
+/* ------------------------------------------------------------------ *
+ * 9. Stacked allocation area chart
+ *
+ * Negative weights (when shorting is allowed) stack downward from zero so
+ * the chart stays readable.
+ * ------------------------------------------------------------------ */
+
+function drawArea(host, fr, uni, opts) {
+  const o = opts || {};
+  const n = uni.n, m = fr.length;
+  const xs = fr.map((p, k) => o.xMode === "sd" ? p.sd : (k / (m - 1)) * 100);
+
+  // Cumulative band edges per asset per position.
+  const loB = Array.from({ length: n }, () => new Float64Array(m));
+  const hiB = Array.from({ length: n }, () => new Float64Array(m));
+  let yTop = 1, yBot = 0;
+  for (let k = 0; k < m; k++) {
+    let up = 0, dn = 0;
+    for (let i = 0; i < n; i++) {
+      const w = fr[k].w[i];
+      if (w >= 0) { loB[i][k] = up; hiB[i][k] = up + w; up += w; }
+      else { hiB[i][k] = dn; loB[i][k] = dn + w; dn += w; }
+    }
+    yTop = Math.max(yTop, up); yBot = Math.min(yBot, dn);
+  }
+
+  const c = Chart(host, {
+    xd: [xs[0], xs[m - 1]],
+    yd: [yBot, yTop],
+    xTitle: o.xMode === "sd" ? "Annualized portfolio volatility" : "Position along the frontier (0 = minimum variance, 100 = maximum return)",
+    yTitle: "Weight",
+    xFmt: o.xMode === "sd" ? (v => fmtPct(v, 0)) : (v => v.toFixed(0)),
+    yFmt: v => `${(v * 100).toFixed(0)}%`,
+    margin: { t: 14, r: 16, b: 40, l: 50 }
+  });
+
+  for (let i = 0; i < n; i++) {
+    let d = "";
+    for (let k = 0; k < m; k++) d += `${k ? "L" : "M"}${c.X(xs[k]).toFixed(2)},${c.Y(hiB[i][k]).toFixed(2)}`;
+    for (let k = m - 1; k >= 0; k--) d += `L${c.X(xs[k]).toFixed(2)},${c.Y(loB[i][k]).toFixed(2)}`;
+    c.add(svg("path", { d: d + "Z", fill: uni.colors[i], stroke: "none", opacity: .95 }));
+  }
+  if (yBot < 0) {
+    c.add(svg("line", { x1: c.X(xs[0]), x2: c.X(xs[m - 1]), y1: c.Y(0), y2: c.Y(0), stroke: "var(--ink)", "stroke-width": 1 }));
+  }
+
+  // Corner portfolios: positions where the set of held classes changes.
+  if (o.corners) {
+    const key = w => Array.from(w).map(v => (Math.abs(v) > WEIGHT_EPS ? 1 : 0)).join("");
+    let prev = key(fr[0].w);
+    for (let k = 1; k < m; k++) {
+      const cur = key(fr[k].w);
+      if (cur !== prev) {
+        c.front(svg("line", {
+          x1: c.X(xs[k]), x2: c.X(xs[k]), y1: c.m.t, y2: c.m.t + c.ih,
+          stroke: "var(--card)", "stroke-width": 1, "stroke-dasharray": "3,3", opacity: .9
+        }));
+        prev = cur;
+      }
+    }
+  }
+  if (o.marker != null) {
+    const mk = c.X(xs[Math.min(m - 1, Math.max(0, o.marker))]);
+    c.front(svg("line", { x1: mk, x2: mk, y1: c.m.t, y2: c.m.t + c.ih, stroke: "var(--ink)", "stroke-width": 1.5, opacity: .8 }));
+  }
+
+  c.track((dx, dy, px, py) => {
+    if (dx == null) return;
+    let k = 0, bd = Infinity;
+    for (let j = 0; j < m; j++) { const d = Math.abs(xs[j] - dx); if (d < bd) { bd = d; k = j; } }
+    const p = fr[k];
+    const rows = Array.from(p.w).map((w, i) => [w, i]).filter(([w]) => Math.abs(w) > WEIGHT_EPS)
+      .sort((a, b) => b[0] - a[0]);
+    c.front(svg("line", {
+      x1: c.X(xs[k]), x2: c.X(xs[k]), y1: c.m.t, y2: c.m.t + c.ih,
+      stroke: "var(--ink)", "stroke-width": 1, opacity: .45, class: "hover-line"
+    }));
+    Array.from(c.fg.querySelectorAll(".hover-line")).slice(0, -1).forEach(e => e.remove());
+    c.showTip(
+      `<div class="tt-date">Position ${((k / (m - 1)) * 100).toFixed(0)} &middot; vol ${fmtPct(p.sd, 2)} &middot; return ${fmtPct(p.ret, 2)}</div>` +
+      rows.slice(0, 12).map(([w, i]) => `<div class="tt-row">${swatchHTML(uni.colors[i])} ${uni.shorts[i]} ${fmtW(w)}</div>`).join("") +
+      (rows.length > 12 ? `<div class="tt-row">+${rows.length - 12} more</div>` : ""),
+      px, py);
+  });
+  return c;
+}
+
+function areaLegendHTML(uni, limit) {
+  const lim = limit || uni.n;
+  let html = uni.names.slice(0, lim).map((nm, i) =>
+    `<span>${swatchHTML(uni.colors[i])}${uni.shorts[i]}</span>`).join("");
+  if (uni.n > lim) html += `<span>+${uni.n - lim} more</span>`;
+  return html;
+}
+/* ------------------------------------------------------------------ *
+ * 10. Universe picker and tiles
+ * ------------------------------------------------------------------ */
+
+function buildUniverseUI() {
+  const host = $("#uni-groups");
+  host.innerHTML = "";
+  for (const g of GROUPS) {
+    const box = document.createElement("div");
+    box.className = "uni-group";
+    const head = document.createElement("div");
+    head.className = "gtitle";
+    head.innerHTML = `<span>${g}</span>`;
+    const all = document.createElement("button");
+    all.className = "btn"; all.type = "button"; all.textContent = "all";
+    const none = document.createElement("button");
+    none.className = "btn"; none.type = "button"; none.textContent = "none";
+    const btns = document.createElement("span");
+    btns.style.display = "flex"; btns.style.gap = "4px";
+    btns.append(all, none);
+    head.appendChild(btns);
+    box.appendChild(head);
+
+    const members = ASSETS.map((a, i) => [a, i]).filter(([a]) => a.group === g && a.investable);
+    all.onclick = () => { members.forEach(([, i]) => state.selected.add(i)); refreshUniverseUI(); recompute(); };
+    none.onclick = () => { members.forEach(([, i]) => state.selected.delete(i)); refreshUniverseUI(); recompute(); };
+
+    for (const [a, i] of members) {
+      const lab = document.createElement("label");
+      lab.className = "uni-item";
+      lab.innerHTML =
+        `<input type="checkbox" data-asset="${i}">${swatchHTML(COLOR[i])}` +
+        `<span>${a.name}</span><span class="nums" data-nums="${i}"></span>`;
+      box.appendChild(lab);
+    }
+    host.appendChild(box);
+  }
+  host.addEventListener("change", ev => {
+    const t = ev.target.closest("input[data-asset]");
+    if (!t) return;
+    const i = +t.dataset.asset;
+    if (t.checked) state.selected.add(i); else state.selected.delete(i);
+    refreshUniverseUI();
+    recompute();
+  });
+
+  const pre = $("#presets");
+  pre.innerHTML = "";
+  for (const key of ["teaching", "idzorek", "broad", "all"]) {
+    const p = DATA.presets[key];
+    const b = document.createElement("button");
+    b.className = "btn"; b.type = "button"; b.textContent = p.label; b.title = p.note;
+    b.dataset.preset = key;
+    b.onclick = () => {
+      state.selected = new Set(p.assets.map(nm => ASSETS.findIndex(a => a.name === nm)));
+      state.shocks.clear(); state.czResult = null; state.spagResult = null; state.rsResult = null;
+      state.views = [];
+      refreshUniverseUI();
+      recompute();
+    };
+    pre.appendChild(b);
+  }
+}
+
+function refreshUniverseUI() {
+  $$("input[data-asset]").forEach(inp => { inp.checked = state.selected.has(+inp.dataset.asset); });
+  $$("[data-nums]").forEach(el => {
+    const i = +el.dataset.nums;
+    el.textContent = `${retOf(i).toFixed(1)} / ${ASSETS[i].vol.toFixed(1)}`;
+  });
+  $("#uni-count").textContent = `${state.selected.size} asset class${state.selected.size === 1 ? "" : "es"}`;
+  $$("#presets .btn").forEach(b => {
+    const p = DATA.presets[b.dataset.preset];
+    const same = p.assets.length === state.selected.size &&
+      p.assets.every(nm => state.selected.has(ASSETS.findIndex(a => a.name === nm)));
+    b.classList.toggle("on", same);
+  });
+}
+
+function tile(k, v, sub) {
+  return `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="sub">${sub || ""}</div></div>`;
+}
+
+function renderTiles() {
+  const mv = FR[0], mr = FR[FR.length - 1];
+  const ts = maxSharpe(FR, U.rf);
+  const sub = U.idx.map(i => U.idx.map(j => CORR[i][j]));
+  const emin = U.n > 1 ? eigMin(sub) : 1;
+  const met = frontierMetrics(FR);
+  const topAsset = ts ? U.shorts[Array.from(ts.w).indexOf(Math.max(...ts.w))] : "\u2014";
+  $("#tiles").innerHTML =
+    tile("Asset classes in the universe", U.n, `${GROUPS.map(g => U.idx.filter(i => ASSETS[i].group === g).length).join(" / ")} FI / EQ / Alt`) +
+    tile("Minimum-variance portfolio", fmtPct(mv.sd, 2), `return ${fmtPct(mv.ret, 2)}, ${nHeld(mv.w)} classes held`) +
+    (ts
+      ? tile("Maximum-Sharpe portfolio", ts.sharpe.toFixed(3), `vol ${fmtPct(ts.sd, 1)}, largest holding ${topAsset} ${fmtW(Math.max(...ts.w))}`)
+      : tile("Maximum-Sharpe portfolio", "\u2014", "no positive-volatility portfolio")) +
+    (ts
+      ? tile("Classes held at max Sharpe", `${nHeld(ts.w)} of ${U.n}`, `effective number ${effN(ts.w).toFixed(1)}`)
+      : "") +
+    tile("Avg. classes held on the frontier", met.avgHeld.toFixed(1), `${(met.pctHeld * 100).toFixed(0)}% of the universe`) +
+    tile("Smallest eigenvalue of the correlation matrix", emin.toFixed(4),
+      emin < 0.02 ? "near-singular: unstable inverse" : emin < 0.1 ? "poorly conditioned" : "reasonably conditioned");
+}
+
+/* ------------------------------------------------------------------ *
+ * 11. Frontier panel
+ * ------------------------------------------------------------------ */
+
+function renderFrontierPanel() {
+  const ts = maxSharpe(FR, U.rf);
+  const specs = [{ fr: FR, color: "var(--accent)", width: 2.2, primary: true }];
+  if (state.showAssets) {
+    specs.push({
+      label: U.n <= 14,
+      points: U.idx.map((gi, i) => ({ sd: U.vol[i], ret: U.mu[i], color: U.colors[i], name: U.shorts[i] }))
+    });
+  }
+  if (state.showVintage && FR_ALT) {
+    specs.push({ fr: FR_ALT, color: "var(--muted)", width: 1.6, dash: "6,4", opacity: .9 });
+  }
+  const marker = FR[state.targetPos];
+  drawFrontier($("#chart-frontier"), specs, {
+    rf: U.rf,
+    tangency: state.showTangency && ts ? ts : null,
+    cal: state.showTangency && ts ? ts : null,
+    marker
+  });
+  $("#note-frontier").textContent = state.showVintage
+    ? ` The dashed grey frontier uses the ${DATA.meta.returnBases[altBasis()].toLowerCase()}.`
+    : "";
+
+  drawArea($("#chart-area"), FR, U, {
+    xMode: state.areaX, corners: state.showCorners, marker: state.targetPos
+  });
+  $("#area-legend").innerHTML = areaLegendHTML(U, 24);
+
+  $("#vintage-area-wrap").hidden = !state.showVintage;
+  if (state.showVintage && FR_ALT) {
+    drawArea($("#chart-area-2025"), FR_ALT, U, { xMode: state.areaX, corners: state.showCorners });
+  }
+
+  // Diversification table, optionally comparing the two vintages.
+  const rows = [["This frontier", frontierMetrics(FR)]];
+  if (state.showVintage && FR_ALT) rows.push([DATA.meta.returnBases[altBasis()], frontierMetrics(FR_ALT)]);
+  $("#frontier-metrics").innerHTML =
+    `<table class="dt"><thead><tr><th>Frontier</th>` +
+    `<th>Avg. classes in the allocation</th><th>as % of universe</th>` +
+    `<th>Avg. size of a non-zero weight</th><th>Avg. weight dispersion</th>` +
+    `<th>Avg. effective number of classes</th></tr></thead><tbody>` +
+    rows.map(([nm, m]) =>
+      `<tr><td>${nm}</td><td>${m.avgHeld.toFixed(2)}</td><td>${(m.pctHeld * 100).toFixed(2)}%</td>` +
+      `<td>${(m.avgNonZero * 100).toFixed(2)}%</td><td>${(m.disp * 100).toFixed(2)}%</td>` +
+      `<td>${m.effN.toFixed(2)}</td></tr>`).join("") +
+    `</tbody></table>`;
+
+  renderTargetTable();
+}
+
+function renderTargetTable() {
+  const p = FR[state.targetPos];
+  $("#target-label").textContent = fmtPct(p.sd, 2);
+  const Sw = matVec(U.S, p.w);
+  const var_ = Math.max(1e-12, quad(U.S, p.w));
+  const rows = Array.from(p.w).map((w, i) => ({
+    i, w, mrc: p.sd > 0 ? Sw[i] / p.sd : 0, pctVar: (w * Sw[i]) / var_
+  })).filter(r => Math.abs(r.w) > 1e-6).sort((a, b) => b.w - a.w);
+  $("#target-table").innerHTML =
+    `<table class="dt"><thead><tr><th>Asset class</th><th>Expected return</th><th>Volatility</th>` +
+    `<th>Weight</th><th>Share of portfolio variance</th><th>Marginal contribution to risk</th>` +
+    `<th>Excess return / MCR</th></tr></thead><tbody>` +
+    rows.map(r =>
+      `<tr><td class="name">${swatchHTML(U.colors[r.i])}${U.names[r.i]}</td>` +
+      `<td>${fmtPct(U.mu[r.i], 2)}</td><td>${fmtPct(U.vol[r.i], 2)}</td>` +
+      `<td><strong>${fmtW(r.w)}</strong></td><td>${(r.pctVar * 100).toFixed(1)}%</td>` +
+      `<td>${r.mrc.toFixed(3)}</td><td>${r.mrc > 1e-6 ? ((U.mu[r.i] - U.rf) / r.mrc).toFixed(3) : "\u2014"}</td></tr>`).join("") +
+    `<tr class="hi"><td><strong>Portfolio</strong></td><td colspan="2"></td>` +
+    `<td><strong>${fmtW(Array.from(p.w).reduce((a, b) => a + b, 0))}</strong></td>` +
+    `<td>100.0%</td><td>${p.sd.toFixed(3)}</td>` +
+    `<td>${p.sd > 0 ? ((p.ret - U.rf) / p.sd).toFixed(3) : "\u2014"}</td></tr>` +
+    `</tbody></table>` +
+    `<p class="cap">Expected return ${fmtPct(p.ret, 2)}, volatility ${fmtPct(p.sd, 2)}, Sharpe ratio ` +
+    `${p.sd > 0 ? ((p.ret - U.rf) / p.sd).toFixed(3) : "\u2014"} against the ${fmtPct(U.rf, 1)} cash return. ` +
+    `${nHeld(p.w)} of ${U.n} classes carry a weight above 0.5%; the effective number of classes is ${effN(p.w).toFixed(1)}.</p>`;
+}
+/* ------------------------------------------------------------------ *
+ * 12. Symmetric eigendecomposition and nearest valid correlation matrix
+ * ------------------------------------------------------------------ */
+
+function jacobiEigen(Ain, sweeps = 60) {
+  const n = Ain.length;
+  const A = Ain.map(r => Float64Array.from(r));
+  const V = Array.from({ length: n }, (_, i) => {
+    const r = new Float64Array(n); r[i] = 1; return r;
+  });
+  for (let s = 0; s < sweeps; s++) {
+    let off = 0;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) off += A[i][j] * A[i][j];
+    if (off < 1e-22) break;
+    for (let p = 0; p < n - 1; p++) {
+      for (let q = p + 1; q < n; q++) {
+        if (Math.abs(A[p][q]) < 1e-18) continue;
+        const theta = (A[q][q] - A[p][p]) / (2 * A[p][q]);
+        const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1));
+        const c = 1 / Math.sqrt(t * t + 1), sn = t * c;
+        for (let k = 0; k < n; k++) {
+          const akp = A[k][p], akq = A[k][q];
+          A[k][p] = c * akp - sn * akq;
+          A[k][q] = sn * akp + c * akq;
+        }
+        for (let k = 0; k < n; k++) {
+          const apk = A[p][k], aqk = A[q][k];
+          A[p][k] = c * apk - sn * aqk;
+          A[q][k] = sn * apk + c * aqk;
+        }
+        for (let k = 0; k < n; k++) {
+          const vkp = V[k][p], vkq = V[k][q];
+          V[k][p] = c * vkp - sn * vkq;
+          V[k][q] = sn * vkp + c * vkq;
+        }
+      }
+    }
+  }
+  return { values: Array.from({ length: n }, (_, i) => A[i][i]), vectors: V };
+}
+
+// Clip negative eigenvalues, rebuild, then rescale the diagonal back to 1.
+function nearestCorr(C, floor = 1e-6) {
+  const n = C.length;
+  const { values, vectors } = jacobiEigen(C);
+  const out = Array.from({ length: n }, () => new Float64Array(n));
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j <= i; j++) {
+      let s = 0;
+      for (let k = 0; k < n; k++) s += vectors[i][k] * Math.max(values[k], floor) * vectors[j][k];
+      out[i][j] = s; out[j][i] = s;
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < i; j++) {
+      const d = Math.sqrt(out[i][i] * out[j][j]);
+      const v = d > 0 ? Math.max(-1, Math.min(1, out[i][j] / d)) : 0;
+      out[i][j] = v; out[j][i] = v;
+    }
+  }
+  for (let i = 0; i < n; i++) out[i][i] = 1;
+  return out;
+}
+
+function covFrom(corr, vol) {
+  const n = vol.length;
+  const S = Array.from({ length: n }, () => new Float64Array(n));
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) S[i][j] = corr[i][j] * vol[i] * vol[j];
+  return S;
+}
+
+/* ------------------------------------------------------------------ *
+ * 13. Weight bar charts
+ * ------------------------------------------------------------------ */
+
+function drawWeightBars(host, series, uni, opts) {
+  const o = opts || {};
+  const n = uni.n;
+  const keep = o.keepAll ? uni.idx.map((_, i) => i)
+    : uni.idx.map((_, i) => i).filter(i => series.some(s => Math.abs(s.w[i]) > 1e-4));
+  const rowH = Math.max(14, Math.min(26, 300 / Math.max(1, keep.length)));
+  host.style.height = `${Math.max(180, keep.length * rowH + 56)}px`;
+  let lo = 0, hi = 0;
+  for (const s of series) for (const i of keep) { lo = Math.min(lo, s.w[i]); hi = Math.max(hi, s.w[i]); }
+  hi = Math.max(hi, 0.05);
+  const pad = (hi - lo) * 0.06;
+  const c = Chart(host, {
+    xd: [lo - pad, hi + pad], yd: [0, keep.length],
+    xTitle: "Weight", yTicks: [],
+    xFmt: v => `${(v * 100).toFixed(0)}%`,
+    margin: { t: 10, r: 14, b: 36, l: 128 }
+  });
+  const bh = (c.ih / keep.length) * 0.72 / series.length;
+  keep.forEach((i, r) => {
+    const yc = c.m.t + (r + 0.5) * (c.ih / keep.length);
+    c.add(svg("text", {
+      class: "axis-label", x: c.m.l - 6, y: yc + 3, "text-anchor": "end", fill: "var(--ink)"
+    }, uni.shorts[i]));
+    series.forEach((s, si) => {
+      const w = s.w[i];
+      const y = yc - (series.length * bh) / 2 + si * bh;
+      c.add(svg("rect", {
+        x: Math.min(c.X(0), c.X(w)), y, width: Math.abs(c.X(w) - c.X(0)) || 0.6, height: bh * 0.92,
+        fill: s.color, opacity: s.opacity != null ? s.opacity : .95
+      }));
+    });
+  });
+  c.front(svg("line", { x1: c.X(0), x2: c.X(0), y1: c.m.t, y2: c.m.t + c.ih, stroke: "var(--ink)", "stroke-width": 1 }));
+  return c;
+}
+
+function drawRangeBars(host, uni, data, opts) {
+  const o = opts || {};
+  const keep = uni.idx.map((_, i) => i).filter(i =>
+    Math.abs(data.base[i]) > 1e-4 || data.hi[i] > 0.01 || Math.abs(data.lo[i]) > 0.01);
+  const rowH = 20;
+  host.style.height = `${Math.max(180, keep.length * rowH + 56)}px`;
+  let lo = 0, hi = 0.05;
+  for (const i of keep) { lo = Math.min(lo, data.lo[i]); hi = Math.max(hi, data.hi[i]); }
+  const c = Chart(host, {
+    xd: [lo - 0.02, hi + 0.02], yd: [0, keep.length], yTicks: [],
+    xTitle: "Weight", xFmt: v => `${(v * 100).toFixed(0)}%`,
+    margin: { t: 10, r: 16, b: 36, l: 128 }
+  });
+  keep.forEach((i, r) => {
+    const yc = c.m.t + (r + 0.5) * (c.ih / keep.length);
+    c.add(svg("text", { class: "axis-label", x: c.m.l - 6, y: yc + 3, "text-anchor": "end", fill: "var(--ink)" }, uni.shorts[i]));
+    c.add(svg("line", { x1: c.X(data.lo[i]), x2: c.X(data.hi[i]), y1: yc, y2: yc, stroke: uni.colors[i], "stroke-width": 7, opacity: .5, "stroke-linecap": "round" }));
+    c.add(svg("line", { x1: c.X(data.q1[i]), x2: c.X(data.q3[i]), y1: yc, y2: yc, stroke: uni.colors[i], "stroke-width": 7, opacity: 1, "stroke-linecap": "butt" }));
+    c.front(svg("circle", { cx: c.X(data.base[i]), cy: yc, r: 3.4, fill: "var(--ink)", stroke: "var(--card)", "stroke-width": 1 }));
+  });
+  c.front(svg("line", { x1: c.X(0), x2: c.X(0), y1: c.m.t, y2: c.m.t + c.ih, stroke: "var(--ink)", "stroke-width": 1, opacity: .6 }));
+  return c;
+}
+
+/* ------------------------------------------------------------------ *
+ * 14. Estimation-error panel
+ * ------------------------------------------------------------------ */
+
+function seOfMean(i) { return U.vol[i] / Math.sqrt(state.errT); }
+
+function renderShockList() {
+  const host = $("#shock-list");
+  host.innerHTML = U.idx.map((gi, i) => {
+    const sh = state.shocks.get(gi) || 0;
+    return `<div class="shock-row">` +
+      `<span class="name" style="display:flex;align-items:center;gap:6px;">${swatchHTML(U.colors[i])}${U.shorts[i]}</span>` +
+      `<span class="mu">${fmtPct(U.mu[i] + sh * seOfMean(i), 2)}</span>` +
+      `<input type="range" data-shock="${gi}" min="-200" max="200" step="5" value="${sh * 100}">` +
+      `<span class="se">${sh >= 0 ? "+" : ""}${sh.toFixed(2)}</span></div>`;
+  }).join("");
+  $("#err-se-note").innerHTML =
+    `At T = ${state.errT} years the standard error of an expected return ranges from ` +
+    `${fmtPct(Math.min(...U.idx.map((_, i) => seOfMean(i))), 2)} to ` +
+    `${fmtPct(Math.max(...U.idx.map((_, i) => seOfMean(i))), 2)} a year. ` +
+    `A 1.96 SE band on U.S. Large Cap is &plusmn;${fmtPct(1.96 * 16.47 / Math.sqrt(state.errT), 1)}.`;
+}
+
+function renderErrorPanel() {
+  $("#err-target-label").textContent = fmtPct(FR[state.errTargetPos].sd, 2);
+  renderShockList();
+
+  const base = FR[state.errTargetPos];
+  const Ush = buildUniverse(state.basis, state.shocks);
+  const frSh = frontier(Ush.mu, Ush.S, Ush.lo, Ush.hi, GAMMAS, Ush.eigS);
+  const shocked = nearestOn(frSh, base.sd);
+
+  drawWeightBars($("#chart-shock"), [
+    { name: "J.P. Morgan assumptions", color: "var(--muted)", w: base.w },
+    { name: "After the shock", color: "var(--accent)", w: shocked.w }
+  ], U);
+  const to = turnover(base.w, shocked.w);
+  const anyShock = Array.from(state.shocks.values()).some(v => Math.abs(v) > 1e-9);
+  $("#shock-readout").innerHTML =
+    `<span>${swatchHTML("var(--muted)")}J.P. Morgan assumptions</span> &nbsp; ` +
+    `<span>${swatchHTML("var(--accent)")}after the shock</span><br>` +
+    (anyShock
+      ? `Matching the baseline volatility of ${fmtPct(base.sd, 2)}, the allocation turns over <strong>${(to * 100).toFixed(1)}%</strong> ` +
+        `and the number of classes held goes from ${nHeld(base.w)} to ${nHeld(shocked.w)}. ` +
+        `Expected return moves from ${fmtPct(base.ret, 2)} to ${fmtPct(shocked.ret, 2)} &mdash; but that is the return the ` +
+        `<em>shocked</em> forecast promises, not what the portfolio would actually deliver.`
+      : `Move a slider above, or shock everything at once from the panel on the left.`);
+}
+
+// ---- Chopra and Ziemba comparison -------------------------------------------
+
+function runChopraZiemba() {
+  const draws = Math.max(20, Math.min(2000, +$("#cz-draws").value || 200));
+  const seed = +$("#cz-seed").value || 7;
+  const n = U.n, T = state.errT;
+  const baseFr = FR, basePt = baseFr[state.errTargetPos], targetSd = basePt.sd;
+  const corrSub = U.idx.map(i => U.idx.map(j => CORR[i][j]));
+  const bar = $("#cz-progress");
+  bar.hidden = false;
+
+  const acc = { mu: [], vol: [], corr: [] };
+  let d = 0;
+
+  const step = () => {
+    const until = Math.min(draws, d + 4);
+    for (; d < until; d++) {
+      const rng = mulberry32(seed * 7919 + d);
+      const nrm = makeNormal(rng);
+
+      // (a) noise in expected returns only
+      const mu2 = Float64Array.from(U.mu);
+      for (let i = 0; i < n; i++) mu2[i] += nrm() * U.vol[i] / Math.sqrt(T);
+      acc.mu.push(turnover(basePt.w,
+        nearestOn(frontier(mu2, U.S, U.lo, U.hi, RS_GAMMAS, U.eigS, CZ_ITERS), targetSd).w));
+
+      // (b) noise in volatilities only; SE of a sample sd is sigma/sqrt(2T)
+      const vol2 = Float64Array.from(U.vol);
+      for (let i = 0; i < n; i++) vol2[i] = Math.max(0.05, vol2[i] + nrm() * U.vol[i] / Math.sqrt(2 * T));
+      const S2 = covFrom(corrSub, vol2);
+      acc.vol.push(turnover(basePt.w,
+        nearestOn(frontier(U.mu, S2, U.lo, U.hi, RS_GAMMAS, eigMax(S2), CZ_ITERS), targetSd).w));
+
+      // (c) noise in correlations only, repaired to the nearest valid matrix
+      const c2 = corrSub.map(r => r.slice());
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < i; j++) {
+          const r = corrSub[i][j];
+          const v = Math.max(-0.999, Math.min(0.999, r + nrm() * (1 - r * r) / Math.sqrt(T)));
+          c2[i][j] = v; c2[j][i] = v;
+        }
+      }
+      const S3 = covFrom(nearestCorr(c2), U.vol);
+      acc.corr.push(turnover(basePt.w,
+        nearestOn(frontier(U.mu, S3, U.lo, U.hi, RS_GAMMAS, eigMax(S3), CZ_ITERS), targetSd).w));
+    }
+    bar.firstElementChild.style.width = `${(d / draws) * 100}%`;
+    if (d < draws) { requestAnimationFrame(step); return; }
+    bar.hidden = true;
+    const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+    state.czResult = {
+      draws, T, targetSd,
+      mu: mean(acc.mu), vol: mean(acc.vol), corr: mean(acc.corr)
+    };
+    renderCZTable();
+  };
+  requestAnimationFrame(step);
+}
+
+function renderCZTable() {
+  const r = state.czResult;
+  if (!r) {
+    $("#cz-table").innerHTML = `<p class="cap" style="margin:0;">Press Run to compare the three inputs.</p>`;
+    return;
+  }
+  const rows = [
+    ["Expected returns &mu;", r.mu, "&sigma;<sub>i</sub>/&radic;T"],
+    ["Volatilities &sigma;", r.vol, "&sigma;<sub>i</sub>/&radic;(2T)"],
+    ["Correlations &rho;", r.corr, "(1&minus;&rho;&sup2;)/&radic;T"]
+  ];
+  const ref = r.corr > 1e-9 ? r.corr : 1;
+  $("#cz-table").innerHTML =
+    `<table class="dt"><thead><tr><th>Input perturbed</th><th>Noise standard deviation</th>` +
+    `<th>Mean portfolio turnover</th><th>Relative to correlations</th><th>Chopra&ndash;Ziemba benchmark</th>` +
+    `</tr></thead><tbody>` +
+    rows.map(([nm, v, se], k) =>
+      `<tr${k === 0 ? ' class="hi"' : ""}><td>${nm}</td><td>${se}</td>` +
+      `<td><strong>${(v * 100).toFixed(2)}%</strong></td><td>${(v / ref).toFixed(1)}&times;</td>` +
+      `<td>${["22&times;", "2&times;", "1&times;"][k]}</td></tr>`).join("") +
+    `</tbody></table>` +
+    `<p class="cap">${r.draws} noise draws, T = ${r.T} years, target volatility ${fmtPct(r.targetSd, 2)}. ` +
+    `The benchmark column states Chopra and Ziemba's ratios (returns 11&times; variances, variances 2&times; covariances) ` +
+    `in units of covariance error. Their experiment measured a cash-equivalent utility loss on a fixed universe, so the ` +
+    `levels here will not match theirs; what should carry over is the ordering and the order of magnitude.</p>`;
+}
+
+// ---- Alternative frontiers --------------------------------------------------
+
+function runSpaghetti() {
+  const nDraw = Math.max(5, Math.min(300, +$("#spag-n").value || 40));
+  const seed = +$("#spag-seed").value || 3;
+  const n = U.n, T = state.errT;
+  const targetSd = FR[state.errTargetPos].sd;
+  const bar = $("#spag-progress");
+  bar.hidden = false;
+  const frontiers = [], targetWs = [];
+  let d = 0;
+  const step = () => {
+    const until = Math.min(nDraw, d + 4);
+    for (; d < until; d++) {
+      const nrm = makeNormal(mulberry32(seed * 104729 + d));
+      const mu2 = Float64Array.from(U.mu);
+      for (let i = 0; i < n; i++) mu2[i] += nrm() * U.vol[i] / Math.sqrt(T);
+      const fr = frontier(mu2, U.S, U.lo, U.hi, GAMMAS, U.eigS);
+      // Plot each draw at its true risk and true expected return, not the
+      // return its own noisy forecast claims.
+      frontiers.push(fr.map(p => ({ sd: p.sd, ret: dot(p.w, U.mu) })));
+      targetWs.push(nearestOn(fr, targetSd).w);
+    }
+    bar.firstElementChild.style.width = `${(d / nDraw) * 100}%`;
+    if (d < nDraw) { requestAnimationFrame(step); return; }
+    bar.hidden = true;
+    state.spagResult = { frontiers, targetWs, nDraw, T, targetSd };
+    renderSpaghetti();
+  };
+  requestAnimationFrame(step);
+}
+
+function renderSpaghetti() {
+  const r = state.spagResult;
+  if (!r) {
+    $("#chart-spaghetti").innerHTML = "";
+    $("#chart-spag-box").innerHTML = "";
+    return;
+  }
+  const specs = r.frontiers.map(fr => ({ fr, color: "var(--accent)", width: 1, opacity: .18 }));
+  specs.push({ fr: FR, color: "var(--accent)", width: 2.6, primary: true });
+  drawFrontier($("#chart-spaghetti"), specs, { rf: U.rf });
+
+  const n = U.n;
+  const pick = (arr, q) => arr[Math.min(arr.length - 1, Math.max(0, Math.round(q * (arr.length - 1))))];
+  const data = { lo: [], hi: [], q1: [], q3: [], base: FR[state.errTargetPos].w };
+  for (let i = 0; i < n; i++) {
+    const col = r.targetWs.map(w => w[i]).sort((a, b) => a - b);
+    data.lo.push(pick(col, 0.05)); data.q1.push(pick(col, 0.25));
+    data.q3.push(pick(col, 0.75)); data.hi.push(pick(col, 0.95));
+  }
+  drawRangeBars($("#chart-spag-box"), U, data);
+}
+/* ------------------------------------------------------------------ *
+ * 15. Black-Litterman
+ * ------------------------------------------------------------------ */
+
+function refWeights() {
+  const n = U.n;
+  const w = new Float64Array(n);
+  if (state.blRef === "invvol") return inverseVol(U.S);
+  if (state.blRef === "custom") {
+    let s = 0;
+    for (let i = 0; i < n; i++) { w[i] = Math.max(0, state.customRef.get(U.idx[i]) ?? 1 / n); s += w[i]; }
+    if (s > 0) for (let i = 0; i < n; i++) w[i] /= s;
+    return w;
+  }
+  if (state.blRef === "6040") {
+    // 60% equities, 30% fixed income, 10% alternatives, split evenly inside
+    // each group; groups absent from the universe have their share spread.
+    const share = { "Equities": 0.6, "Fixed Income": 0.3, "Alternatives": 0.1 };
+    const counts = {};
+    for (const g of GROUPS) counts[g] = U.idx.filter(i => ASSETS[i].group === g).length;
+    let tot = 0;
+    for (const g of GROUPS) if (counts[g]) tot += share[g];
+    for (let i = 0; i < n; i++) {
+      const g = ASSETS[U.idx[i]].group;
+      w[i] = counts[g] ? (share[g] / tot) / counts[g] : 0;
+    }
+    return w;
+  }
+  w.fill(1 / n);
+  return w;
+}
+
+// Reverse optimization: Pi = delta * Sigma * w_ref, with delta chosen so the
+// reference portfolio earns the stated risk premium.
+function blEquilibrium() {
+  const wRef = refWeights();
+  const SwRef = matVec(U.S, wRef);
+  const varRef = Math.max(1e-10, dot(wRef, SwRef));
+  const jpmPrem = dot(wRef, U.mu) - U.rf;
+  const mrp = state.blAuto ? jpmPrem : state.blMrp;
+  const delta = mrp / varRef;
+  const pi = new Float64Array(U.n);
+  const beta = new Float64Array(U.n);
+  for (let i = 0; i < U.n; i++) { pi[i] = delta * SwRef[i]; beta[i] = SwRef[i] / varRef; }
+  return { wRef, pi, beta, delta, mrp, jpmPrem, sdRef: Math.sqrt(varRef) };
+}
+
+// Absolute single-asset views. Omega_kk = ((1-c)/c) * P_k tau Sigma P_k'
+// makes tau cancel, so confidence alone controls how far the posterior moves.
+function blPosterior(eq) {
+  const n = U.n;
+  const post = Float64Array.from(eq.pi);
+  const active = state.views.filter(v => {
+    const i = U.idx.indexOf(v.asset);
+    return i >= 0 && isFinite(v.q) && v.conf > 0;
+  });
+  for (const v of active) {
+    const i = U.idx.indexOf(v.asset);
+    const c = Math.max(0.01, Math.min(1, v.conf));
+    const qx = v.q - U.rf;              // view stated as a total return
+    const dev = qx - post[i];
+    const vii = Math.max(1e-10, U.S[i][i]);
+    for (let j = 0; j < n; j++) post[j] += c * (U.S[j][i] / vii) * dev;
+  }
+  const mu = new Float64Array(n);
+  for (let i = 0; i < n; i++) mu[i] = U.rf + post[i];
+  return { mu, piExcess: post, nViews: active.length };
+}
+
+/* ------------------------------------------------------------------ *
+ * 16. Resampled mean-variance optimization
+ *
+ * Michaud-style rank association: solve the frontier on each simulated set
+ * of capital market assumptions, then average the k-th portfolio across all
+ * simulations. Averaging weights at matched rank is what smooths the
+ * allocations out.
+ * ------------------------------------------------------------------ */
+
+// Coarser gamma grid and a tighter iteration budget for the Monte Carlo loops,
+// which only ever read one point off each simulated frontier.
+const RS_GAMMAS = Array.from({ length: 41 }, (_, k) =>
+  Math.exp(Math.log(GAMMA_HI) + (Math.log(GAMMA_LO) - Math.log(GAMMA_HI)) * (k / 40)));
+const CZ_ITERS = [1200, 350];
+
+function runResampling() {
+  const nRS = Math.max(10, Math.min(1000, +$("#rs-n").value || 100));
+  const T = Math.max(3, Math.min(200, +$("#rs-T").value || 20));
+  const seed = +$("#rs-seed").value || 11;
+  const n = U.n, m = RS_GAMMAS.length;
+  const note = $("#rs-note");
+
+  if (T <= n + 1) {
+    note.innerHTML = `<span style="color:var(--warn)">Simulated years must exceed the number of asset classes (${n}), ` +
+      `otherwise the simulated covariance matrix is singular and the optimizer finds a spurious zero-risk portfolio. ` +
+      `Raise the years to at least ${n + 2}, or shrink the universe.</span>`;
+    return;
+  }
+  const L = cholesky(U.S);
+  if (!L) { note.innerHTML = `<span style="color:var(--warn)">The covariance matrix is not positive definite; cannot simulate.</span>`; return; }
+
+  const eq = blEquilibrium();
+  const blMu = blPosterior(eq).mu;
+  const sums = {
+    jpm: Array.from({ length: m }, () => new Float64Array(n)),
+    bl: Array.from({ length: m }, () => new Float64Array(n))
+  };
+  const bar = $("#rs-progress");
+  bar.hidden = false;
+  note.textContent = "";
+  let d = 0;
+
+  const step = () => {
+    const until = Math.min(nRS, d + 5);
+    for (; d < until; d++) {
+      for (const key of ["jpm", "bl"]) {
+        const baseMu = key === "jpm" ? U.mu : blMu;
+        const nrm = makeNormal(mulberry32(seed * 7919 + d * 31 + (key === "jpm" ? 0 : 1)));
+        const cma = sampleCMA(baseMu, L, T, nrm);
+        const fr = frontier(cma.mu, cma.S, U.lo, U.hi, RS_GAMMAS, eigMax(cma.S), [1500, 400]);
+        for (let k = 0; k < m; k++)
+          for (let i = 0; i < n; i++) sums[key][k][i] += fr[k].w[i];
+      }
+    }
+    bar.firstElementChild.style.width = `${(d / nRS) * 100}%`;
+    if (d < nRS) { requestAnimationFrame(step); return; }
+    bar.hidden = true;
+    const finish = key => sums[key].map(acc => {
+      const w = new Float64Array(n);
+      let s = 0;
+      for (let i = 0; i < n; i++) { w[i] = acc[i] / nRS; s += w[i]; }
+      if (s !== 0) for (let i = 0; i < n; i++) w[i] /= s;
+      return { w, ret: dot(w, U.mu), sd: Math.sqrt(Math.max(0, quad(U.S, w))) };
+    });
+    state.rsResult = { jpm: finish("jpm"), bl: finish("bl"), nRS, T, seed, blMu };
+    note.innerHTML = `${nRS} resamples of ${T} simulated years each. Portfolios are plotted at the expected return and ` +
+      `volatility implied by the original J.P. Morgan assumptions.`;
+    renderRobustPanel();
+  };
+  requestAnimationFrame(step);
+}
+
+/* ------------------------------------------------------------------ *
+ * 17. Robust panel
+ * ------------------------------------------------------------------ */
+
+const METHOD_META = {
+  jpm:   { label: "J.P. Morgan returns + traditional MVO", color: "#c0362c", short: "JPM + traditional" },
+  bl:    { label: "Black-Litterman equilibrium + traditional MVO", color: "#1c5cab", short: "Black-Litterman + traditional" },
+  rsJpm: { label: "J.P. Morgan returns + resampled MVO", color: "#9a6b11", short: "JPM + resampled" },
+  rsBl:  { label: "Black-Litterman equilibrium + resampled MVO", color: "#1f7a4d", short: "Black-Litterman + resampled" },
+  rp:    { label: "Risk parity (no expected returns)", color: "#7a4fa3", short: "Risk parity" },
+  mv:    { label: "Minimum variance (no expected returns)", color: "#5b6572", short: "Minimum variance" }
+};
+
+function buildMethods() {
+  const eq = blEquilibrium();
+  const post = blPosterior(eq);
+  const out = {};
+  out.jpm = { fr: FR };
+  out.bl = { fr: frontier(post.mu, U.S, U.lo, U.hi, GAMMAS, U.eigS), mu: post.mu };
+  if (state.rsResult) {
+    out.rsJpm = { fr: state.rsResult.jpm };
+    out.rsBl = { fr: state.rsResult.bl };
+  }
+  const wrp = riskParity(U.S);
+  out.rp = { single: { w: wrp, ret: dot(wrp, U.mu), sd: Math.sqrt(Math.max(0, quad(U.S, wrp))) } };
+  out.mv = { single: FR[0] };
+  return { eq, post, out };
+}
+
+function renderMethodToggles() {
+  $("#method-toggles").innerHTML = Object.keys(METHOD_META).map(k =>
+    `<button class="btn ${state.methodsOn.has(k) ? "on" : ""}" type="button" data-method="${k}">` +
+    `${swatchHTML(METHOD_META[k].color)} ${METHOD_META[k].short}</button>`).join("");
+}
+
+function drawPie(host, w, uni, title, sub) {
+  const card = document.createElement("div");
+  card.className = "pie-card";
+  card.innerHTML = `<h3>${title}</h3><div class="sub">${sub}</div>`;
+  const size = 170, r = 64, cx = size / 2, cy = size / 2;
+  const root = svg("svg", { width: "100%", height: size, viewBox: `0 0 ${size} ${size}` });
+  const rows = Array.from(w).map((v, i) => [v, i]).filter(([v]) => v > 1e-4).sort((a, b) => b[0] - a[0]);
+  const tot = rows.reduce((s, [v]) => s + v, 0) || 1;
+  let a0 = -Math.PI / 2;
+  for (const [v, i] of rows) {
+    const a1 = a0 + (v / tot) * 2 * Math.PI;
+    const big = a1 - a0 > Math.PI ? 1 : 0;
+    const d = `M${cx},${cy}L${cx + r * Math.cos(a0)},${cy + r * Math.sin(a0)}` +
+      `A${r},${r} 0 ${big} 1 ${cx + r * Math.cos(a1)},${cy + r * Math.sin(a1)}Z`;
+    const p = svg("path", { d, fill: uni.colors[i], stroke: "var(--card)", "stroke-width": 1 });
+    p.appendChild(svg("title", {}, `${uni.names[i]}: ${fmtW(v)}`));
+    root.appendChild(p);
+    a0 = a1;
+  }
+  const neg = Array.from(w).filter(v => v < -1e-4).reduce((s, v) => s + v, 0);
+  card.appendChild(root);
+  const cap = document.createElement("div");
+  cap.className = "sub";
+  cap.innerHTML = `${rows.length} classes &middot; effective ${effN(w).toFixed(1)}` +
+    (neg < -1e-4 ? ` &middot; short ${fmtW(neg)} not shown` : "");
+  card.appendChild(cap);
+  host.appendChild(card);
+}
+
+function renderRobustPanel() {
+  const { eq, post, out } = buildMethods();
+
+  // --- reference portfolio and equilibrium diagnostics
+  $("#bl-mrp").disabled = state.blAuto;
+  if (state.blAuto) $("#bl-mrp").value = eq.jpmPrem.toFixed(2);
+  $("#bl-delta-note").innerHTML =
+    `Reference portfolio volatility ${fmtPct(eq.sdRef, 2)}, J.P. Morgan expected excess return ` +
+    `${fmtPct(eq.jpmPrem, 2)}. Risk-aversion coefficient &delta; = ${eq.delta.toFixed(4)} ` +
+    `(= risk premium / variance). Cash return ${fmtPct(U.rf, 2)}.`;
+
+  // --- implied vs. forecast scatter
+  {
+    const host = $("#chart-implied");
+    const pts = U.idx.map((gi, i) => ({ x: U.rf + eq.pi[i], y: U.mu[i], i }));
+    let lo = Infinity, hi = -Infinity;
+    for (const p of pts) { lo = Math.min(lo, p.x, p.y); hi = Math.max(hi, p.x, p.y); }
+    const pad = (hi - lo) * 0.1 || 1;
+    const c = Chart(host, {
+      xd: [lo - pad, hi + pad], yd: [lo - pad, hi + pad],
+      xTitle: "Implied equilibrium return", yTitle: "J.P. Morgan forecast",
+      margin: { t: 14, r: 16, b: 40, l: 54 }
+    });
+    c.add(svg("line", {
+      x1: c.X(c.xd[0]), y1: c.Y(c.xd[0]), x2: c.X(c.xd[1]), y2: c.Y(c.xd[1]),
+      stroke: "var(--muted)", "stroke-dasharray": "4,4", "stroke-width": 1
+    }));
+    for (const p of pts) {
+      const dot = c.add(svg("circle", { cx: c.X(p.x), cy: c.Y(p.y), r: 4, fill: U.colors[p.i], stroke: "var(--card)", "stroke-width": 1 }));
+      dot.appendChild(svg("title", {}, `${U.names[p.i]}: implied ${fmtPct(p.x, 2)}, forecast ${fmtPct(p.y, 2)}`));
+      if (U.n <= 14) c.add(svg("text", { class: "axis-label", x: c.X(p.x) + 6, y: c.Y(p.y) + 3, fill: "var(--ink)" }, U.shorts[p.i]));
+    }
+  }
+
+  // --- security market line
+  {
+    const host = $("#chart-sml");
+    const pts = U.idx.map((gi, i) => ({ x: eq.beta[i], y: eq.pi[i], i }));
+    const bMax = Math.max(1.2, ...pts.map(p => p.x)) * 1.08;
+    const yMax = Math.max(...pts.map(p => p.y)) * 1.15;
+    const yMin = Math.min(0, ...pts.map(p => p.y));
+    const c = Chart(host, {
+      xd: [Math.min(0, ...pts.map(p => p.x)) * 1.1, bMax], yd: [yMin, yMax],
+      xTitle: "Beta against the reference portfolio", yTitle: "Implied excess return",
+      xFmt: v => v.toFixed(1), margin: { t: 14, r: 16, b: 40, l: 54 }
+    });
+    c.add(svg("line", {
+      x1: c.X(0), y1: c.Y(0), x2: c.X(bMax), y2: c.Y(eq.mrp * bMax),
+      stroke: "var(--accent)", "stroke-width": 1.6
+    }));
+    for (const p of pts) {
+      const dot = c.add(svg("circle", { cx: c.X(p.x), cy: c.Y(p.y), r: 4, fill: U.colors[p.i], stroke: "var(--card)", "stroke-width": 1 }));
+      dot.appendChild(svg("title", {}, `${U.names[p.i]}: beta ${p.x.toFixed(2)}, implied excess ${fmtPct(p.y, 2)}`));
+      if (U.n <= 14) c.add(svg("text", { class: "axis-label", x: c.X(p.x) + 6, y: c.Y(p.y) + 3, fill: "var(--ink)" }, U.shorts[p.i]));
+    }
+  }
+
+  renderViews(eq);
+  $("#views-note").innerHTML = post.nViews === 0
+    ? `With no views the Black-Litterman returns are just the equilibrium returns, which is the configuration Idzorek uses for his Figures 8 and 9.`
+    : `${post.nViews} view${post.nViews > 1 ? "s" : ""} applied. The posterior shifts every correlated class too, not only the one named in the view.`;
+
+  // --- frontier comparison
+  renderMethodToggles();
+  const target = FR[state.robTargetPos];
+  $("#rob-target-label").textContent = fmtPct(target.sd, 2);
+  const specs = [], marks = [];
+  for (const k of Object.keys(METHOD_META)) {
+    if (!state.methodsOn.has(k)) continue;
+    const m = out[k];
+    if (!m) continue;
+    if (m.fr) specs.push({ fr: m.fr, color: METHOD_META[k].color, width: k === "jpm" ? 2.4 : 1.8, primary: k === "jpm" });
+    if (m.single) marks.push({ sd: m.single.sd, ret: m.single.ret, color: METHOD_META[k].color, name: METHOD_META[k].short });
+  }
+  if (marks.length) specs.push({ points: marks, label: true });
+  drawFrontier($("#chart-robust-frontier"), specs, { rf: U.rf });
+  $("#note-robust-frontier").textContent = state.rsResult
+    ? ""
+    : " Press Run resampling to add the two resampled frontiers.";
+
+  // --- area charts per method
+  const areaHost = $("#robust-areas");
+  areaHost.innerHTML = "";
+  for (const k of Object.keys(METHOD_META)) {
+    if (!state.methodsOn.has(k)) continue;
+    const m = out[k];
+    if (!m || !m.fr) continue;
+    const h = document.createElement("h3");
+    h.innerHTML = `${swatchHTML(METHOD_META[k].color)} ${METHOD_META[k].label}`;
+    const d = document.createElement("div");
+    d.className = "chart";
+    d.style.height = "250px";
+    areaHost.append(h, d);
+    drawArea(d, m.fr, U, { xMode: "pos", corners: state.showCorners });
+  }
+  if (areaHost.children.length) {
+    const lg = document.createElement("div");
+    lg.className = "legend-inline";
+    lg.innerHTML = areaLegendHTML(U, 24);
+    areaHost.appendChild(lg);
+  }
+
+  // --- scorecard
+  const rows = [];
+  for (const k of Object.keys(METHOD_META)) {
+    const m = out[k];
+    if (!m) continue;
+    const met = m.fr ? frontierMetrics(m.fr) : frontierMetrics([m.single]);
+    rows.push([k, met, m.fr ? m.fr.length : 1]);
+  }
+  $("#robust-metrics").innerHTML =
+    `<table class="dt"><thead><tr><th>Method</th><th>Avg. weight dispersion</th>` +
+    `<th>Avg. % of classes in the allocation</th><th>Avg. size of a non-zero weight</th>` +
+    `<th>Avg. effective number of classes</th><th>Portfolios averaged</th></tr></thead><tbody>` +
+    rows.map(([k, m, cnt]) =>
+      `<tr><td class="name">${swatchHTML(METHOD_META[k].color)}${METHOD_META[k].label}</td>` +
+      `<td>${(m.disp * 100).toFixed(2)}%</td><td>${(m.pctHeld * 100).toFixed(2)}%</td>` +
+      `<td>${(m.avgNonZero * 100).toFixed(2)}%</td><td>${m.effN.toFixed(2)}</td><td>${cnt}</td></tr>`).join("") +
+    `</tbody></table>` +
+    (state.rsResult ? "" : `<p class="cap">Run resampling to fill in the two resampled rows.</p>`);
+
+  // --- cross-section pies and table
+  const pieHost = $("#robust-pies");
+  pieHost.innerHTML = "";
+  const cross = [];
+  for (const k of Object.keys(METHOD_META)) {
+    if (!state.methodsOn.has(k)) continue;
+    const m = out[k];
+    if (!m) continue;
+    const p = m.fr ? nearestOn(m.fr, target.sd) : m.single;
+    cross.push([k, p]);
+    drawPie(pieHost, p.w, U, METHOD_META[k].short,
+      `vol ${fmtPct(p.sd, 2)} &middot; return ${fmtPct(p.ret, 2)}` +
+      (p.sd > 0 ? ` &middot; Sharpe ${((p.ret - U.rf) / p.sd).toFixed(2)}` : ""));
+  }
+  $("#robust-pie-legend").innerHTML = areaLegendHTML(U, 24);
+  $("#robust-table").innerHTML =
+    `<table class="dt"><thead><tr><th>Asset class</th>` +
+    cross.map(([k]) => `<th>${METHOD_META[k].short}</th>`).join("") +
+    `</tr></thead><tbody>` +
+    U.idx.map((gi, i) =>
+      `<tr><td class="name">${swatchHTML(U.colors[i])}${U.names[i]}</td>` +
+      cross.map(([, p]) => `<td>${Math.abs(p.w[i]) > 1e-4 ? fmtW(p.w[i]) : "\u2014"}</td>`).join("") + `</tr>`).join("") +
+    `<tr class="hi"><td><strong>Classes held</strong></td>` +
+    cross.map(([, p]) => `<td><strong>${nHeld(p.w)} of ${U.n}</strong></td>`).join("") + `</tr>` +
+    `<tr><td>Expected return</td>` + cross.map(([, p]) => `<td>${fmtPct(p.ret, 2)}</td>`).join("") + `</tr>` +
+    `<tr><td>Volatility</td>` + cross.map(([, p]) => `<td>${fmtPct(p.sd, 2)}</td>`).join("") + `</tr>` +
+    `</tbody></table>`;
+}
+
+function renderViews(eq) {
+  const host = $("#views-list");
+  host.innerHTML = state.views.map((v, k) => {
+    const pos = U.idx.indexOf(v.asset);
+    const implied = pos >= 0 ? U.rf + eq.pi[pos] : null;
+    return `<div class="view-row">` +
+      `<select data-view-asset="${k}">` +
+      U.idx.map((gi, i) => `<option value="${gi}" ${gi === v.asset ? "selected" : ""}>${U.names[i]}</option>`).join("") +
+      `</select>` +
+      `<input type="number" step="0.1" data-view-q="${k}" value="${v.q}">` +
+      `<label style="display:flex;flex-direction:column;gap:2px;">` +
+      `<span>confidence ${(v.conf * 100).toFixed(0)}%${implied != null ? ` &middot; equilibrium ${fmtPct(implied, 2)}` : ""}</span>` +
+      `<input type="range" min="1" max="100" step="1" data-view-conf="${k}" value="${Math.round(v.conf * 100)}"></label>` +
+      `<button class="x" type="button" data-view-del="${k}" title="Remove">&times;</button>` +
+      `</div>`;
+  }).join("");
+}
+/* ------------------------------------------------------------------ *
+ * 18. Recompute and render
+ * ------------------------------------------------------------------ */
+
+function recompute() {
+  if (state.selected.size < 2) {
+    FR = null;
+    $("#tiles").innerHTML = `<div class="tile"><div class="k">Universe</div><div class="v">Pick at least 2</div>` +
+      `<div class="sub">An optimizer needs something to choose between.</div></div>`;
+    $$(".panel").forEach(p => { if (!p.classList.contains("hidden")) p.style.opacity = ".35"; });
+    return;
+  }
+  $$(".panel").forEach(p => { p.style.opacity = "1"; });
+
+  U = buildUniverse();
+  FR = frontier(U.mu, U.S, U.lo, U.hi, GAMMAS, U.eigS);
+  FR_ALT = state.showVintage
+    ? (() => { const a = buildUniverse(altBasis()); return frontier(a.mu, a.S, a.lo, a.hi, GAMMAS, a.eigS); })()
+    : null;
+
+  // Shocks and views keyed on global indices survive a universe change, but
+  // results computed against the old universe do not.
+  state.czResult = null;
+  state.spagResult = null;
+  state.rsResult = null;
+  state.views = state.views.filter(v => state.selected.has(v.asset));
+
+  syncTargetPos();
+  renderTiles();
+  renderActive();
+}
+
+// The gamma sweep bunches portfolios near minimum variance, so the target
+// slider walks the volatility range and snaps to the closest frontier point.
+function posForFrac(frac) {
+  const lo = FR[0].sd, hi = FR[FR.length - 1].sd;
+  const t = lo + frac * (hi - lo);
+  let best = 0, bd = Infinity;
+  for (let i = 0; i < FR.length; i++) {
+    const d = Math.abs(FR[i].sd - t);
+    if (d < bd) { bd = d; best = i; }
+  }
+  return best;
+}
+function syncTargetPos() {
+  state.targetPos = posForFrac(state.targetFrac);
+  state.errTargetPos = posForFrac(state.errTargetFrac);
+  state.robTargetPos = posForFrac(state.robTargetFrac);
+}
+
+function renderActive() {
+  if (!FR) return;
+  if (state.tab === "frontier") renderFrontierPanel();
+  else if (state.tab === "error") { renderErrorPanel(); renderCZTable(); renderSpaghetti(); }
+  else if (state.tab === "robust") renderRobustPanel();
+}
+
+// Slider moves only need the active panel redrawn, not a full re-solve.
+let rafPending = false;
+function renderSoon() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; renderActive(); });
+}
+
+/* ------------------------------------------------------------------ *
+ * 19. Event wiring
+ * ------------------------------------------------------------------ */
+
+$("#theme-toggle").onclick = () => {
+  const dark = document.documentElement.getAttribute("data-theme") === "dark";
+  document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
+  $("#theme-toggle").textContent = dark ? "Dark mode" : "Light mode";
+  renderActive();
+};
+
+$("#tabs").addEventListener("click", ev => {
+  const b = ev.target.closest(".tab");
+  if (!b) return;
+  state.tab = b.dataset.tab;
+  $$(".tab").forEach(t => t.classList.toggle("active", t === b));
+  $$(".panel").forEach(p => p.classList.toggle("hidden", p.id !== `panel-${state.tab}`));
+  renderActive();
+});
+
+$("#basis").onchange = e => { state.basis = e.target.value; refreshUniverseUI(); recompute(); };
+$("#constraint").onchange = e => {
+  state.constraint = e.target.value;
+  $("#bound-ctl").hidden = state.constraint !== "short";
+  $("#cap-ctl").hidden = state.constraint !== "capped";
+  recompute();
+};
+$("#bound").oninput = e => {
+  state.bound = +e.target.value / 100;
+  $("#bound-label").textContent = `${e.target.value}%`;
+  recompute();
+};
+$("#cap").oninput = e => {
+  state.cap = +e.target.value / 100;
+  $("#cap-label").textContent = `${e.target.value}%`;
+  recompute();
+};
+
+$("#show-assets").onchange = e => { state.showAssets = e.target.checked; renderSoon(); };
+$("#show-tangency").onchange = e => { state.showTangency = e.target.checked; renderSoon(); };
+$("#show-corners").onchange = e => { state.showCorners = e.target.checked; renderSoon(); };
+$("#show-vintage").onchange = e => {
+  state.showVintage = e.target.checked;
+  FR_ALT = state.showVintage
+    ? (() => { const a = buildUniverse(altBasis()); return frontier(a.mu, a.S, a.lo, a.hi, GAMMAS, a.eigS); })()
+    : null;
+  renderSoon();
+};
+$("#area-x").onchange = e => { state.areaX = e.target.value; renderSoon(); };
+$("#target-sd").oninput = e => { state.targetFrac = +e.target.value / 1000; syncTargetPos(); renderSoon(); };
+
+// --- estimation error tab
+$("#err-T").onchange = e => {
+  state.errT = Math.max(2, Math.min(200, +e.target.value || 20));
+  e.target.value = state.errT;
+  state.czResult = null; state.spagResult = null;
+  renderSoon();
+};
+$("#err-target").oninput = e => { state.errTargetFrac = +e.target.value / 1000; syncTargetPos(); renderSoon(); };
+$("#shock-list").addEventListener("input", ev => {
+  const t = ev.target.closest("input[data-shock]");
+  if (!t) return;
+  state.shocks.set(+t.dataset.shock, +t.value / 100);
+  renderSoon();
+});
+function applyGlobalShock(mag) {
+  if (state.errPattern.size === 0) newErrorPattern(1);
+  for (const gi of state.selected) state.shocks.set(gi, mag * (state.errPattern.get(gi) || 0));
+}
+function newErrorPattern(seed) {
+  const rng = mulberry32(seed || Math.floor(Math.random() * 1e9));
+  state.errPattern = new Map();
+  for (const gi of Array.from(state.selected).sort((a, b) => a - b)) {
+    state.errPattern.set(gi, rng() < 0.5 ? -1 : 1);
+  }
+}
+$("#err-all").oninput = e => {
+  const mag = +e.target.value / 100;
+  $("#err-all-label").textContent = `${mag.toFixed(2)} SE`;
+  applyGlobalShock(mag);
+  renderSoon();
+};
+$("#err-random").onclick = () => {
+  newErrorPattern();
+  applyGlobalShock(+$("#err-all").value / 100);
+  renderSoon();
+};
+$("#err-reset").onclick = () => {
+  state.shocks.clear();
+  $("#err-all").value = 0;
+  $("#err-all-label").textContent = "0.00 SE";
+  renderSoon();
+};
+$("#cz-run").onclick = runChopraZiemba;
+$("#spag-run").onclick = runSpaghetti;
+
+// --- robust tab
+$("#bl-ref").onchange = e => { state.blRef = e.target.value; renderSoon(); };
+$("#bl-auto").onchange = e => { state.blAuto = e.target.checked; renderSoon(); };
+$("#bl-mrp").onchange = e => { state.blMrp = +e.target.value || 0; renderSoon(); };
+$("#rob-target").oninput = e => { state.robTargetFrac = +e.target.value / 1000; syncTargetPos(); renderSoon(); };
+$("#rs-run").onclick = runResampling;
+$("#method-toggles").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-method]");
+  if (!b) return;
+  const k = b.dataset.method;
+  if (state.methodsOn.has(k)) state.methodsOn.delete(k); else state.methodsOn.add(k);
+  renderSoon();
+});
+$("#view-add").onclick = () => {
+  const gi = U.idx[0];
+  const eq = blEquilibrium();
+  state.views.push({ asset: gi, q: +(U.rf + eq.pi[0] + 2).toFixed(1), conf: 0.5 });
+  renderSoon();
+};
+$("#views-list").addEventListener("input", ev => {
+  const t = ev.target;
+  if (t.dataset.viewAsset != null) state.views[+t.dataset.viewAsset].asset = +t.value;
+  else if (t.dataset.viewQ != null) state.views[+t.dataset.viewQ].q = +t.value;
+  else if (t.dataset.viewConf != null) state.views[+t.dataset.viewConf].conf = +t.value / 100;
+  else return;
+  renderSoon();
+});
+$("#views-list").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-view-del]");
+  if (!b) return;
+  state.views.splice(+b.dataset.viewDel, 1);
+  renderSoon();
+});
+
+let resizeTimer = null;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderActive, 180);
+});
+
+/* ------------------------------------------------------------------ *
+ * 20. Sources and boot
+ * ------------------------------------------------------------------ */
+
+$("#sources-list").innerHTML = [
+  `<li><strong>Capital market assumptions.</strong> ${DATA.meta.source}. ` +
+  `${DATA.meta.nAssets} asset classes, of which ${DATA.meta.nInvestable} are investable; U.S. Inflation is carried in the ` +
+  `file but excluded from the optimizer. Expected returns, annualized volatilities and the full ` +
+  `${DATA.meta.nAssets}&times;${DATA.meta.nAssets} correlation matrix are taken as published, with no rescaling. ` +
+  `The smallest eigenvalue of the ${DATA.meta.nInvestable}-asset correlation matrix is ` +
+  `${DATA.meta.corrMinEigenvalue.toFixed(4)}, so the matrix is close to singular and its inverse &mdash; which the ` +
+  `optimizer depends on &mdash; is correspondingly unstable.</li>`,
+
+  `<li><strong>Arithmetic versus compound returns.</strong> Mean-variance optimization requires arithmetic mean returns, ` +
+  `which is the default here. J.P. Morgan publishes both; the compound figures are lower by roughly &sigma;&sup2;/2 and are ` +
+  `offered mainly so the 2025 and 2026 editions can be compared on a like-for-like basis.</li>`,
+
+  `<li><strong>Optimizer.</strong> Each frontier point maximizes <em>w&prime;&mu;</em> &minus; (&gamma;/2)<em>w&prime;&Sigma;w</em> ` +
+  `subject to the budget constraint and the selected weight bounds, solved by accelerated projected gradient with an exact ` +
+  `projection onto the box-truncated simplex. Sweeping &gamma; from 10&sup3; to 10&#8315;&#8308; traces 101 portfolios from ` +
+  `minimum variance to maximum return.</li>`,
+
+  `<li><strong>Black-Litterman.</strong> Equilibrium returns come from reverse optimization, &Pi; = &delta;&Sigma;<em>w</em><sub>ref</sub>, ` +
+  `with &delta; set so the reference portfolio earns the stated risk premium. The J.P. Morgan file contains no market ` +
+  `capitalizations, so the reference portfolio is chosen in the panel; a policy benchmark is a legitimate substitute, as ` +
+  `Idzorek notes. Views are absolute and single-asset, with &Omega;<sub>kk</sub> = ((1&minus;<em>c</em>)/<em>c</em>) ` +
+  `<em>P<sub>k</sub></em>&tau;&Sigma;<em>P<sub>k</sub></em>&prime; following Idzorek's confidence-based specification, under ` +
+  `which &tau; cancels and the confidence level alone sets how far the posterior moves.</li>`,
+
+  `<li><strong>Resampled MVO.</strong> Parametric multivariate Monte Carlo: draw T annual observations from ` +
+  `<em>N</em>(&mu;, &Sigma;), re-estimate &mu; and &Sigma; from the sample, optimize, and average the weights across ` +
+  `simulations at matched rank along the frontier (Michaud's rank association). Idzorek describes Ibbotson's alternative ` +
+  `bin approach, which groups simulated portfolios by volatility instead; rank association is used here because it never ` +
+  `leaves a gap in the frontier. Averaged portfolios are plotted at the risk and return implied by the original ` +
+  `assumptions.</li>`,
+
+  `<li><strong>Standard errors.</strong> SE of a mean is &sigma;/&radic;T; SE of a standard deviation is &sigma;/&radic;(2T); ` +
+  `SE of a correlation is (1&minus;&rho;&sup2;)/&radic;T. T is the assumed sample length in years and is set on the ` +
+  `Estimation Error tab. These are the sampling errors you would face estimating the inputs from history; a published ` +
+  `forecast carries forecast error too, which is not necessarily smaller.</li>`,
+
+  `<li><strong>Reading.</strong> Gallmeyer, <em>Asset Allocation &mdash; Pitfalls and Solutions I: Problems with ` +
+  `Mean-Variance Portfolios</em>. Idzorek, &ldquo;Developing Robust Asset Allocations&rdquo; (Ibbotson Associates, 2006). ` +
+  `Michaud, &ldquo;The Markowitz Optimization Enigma&rdquo; (1989). Chopra and Ziemba, &ldquo;The Effect of Errors in ` +
+  `Means, Variances, and Covariances on Optimal Portfolio Choice&rdquo; (1993). Black and Litterman (1992).</li>`
+].join("");
+
+buildUniverseUI();
+refreshUniverseUI();
+$("#bound-label").textContent = `${Math.round(state.bound * 100)}%`;
+$("#cap-label").textContent = `${Math.round(state.cap * 100)}%`;
+recompute();
+</script>
+</body>
+</html>
