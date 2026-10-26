@@ -11,6 +11,10 @@ Source layout (sheet "2026"):
   col F  compound return, 2026 vintage (%)
   col G onward  correlation matrix, one column per asset in row order
 
+The workbook itself is not in this repo; download it from J.P. Morgan and save
+it at the SRC path below. data/processed/dataset.json is checked in, so the
+site builds without it.
+
 Run: python3 scripts/build_data.py
 """
 import json

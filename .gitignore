@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .DS_Store
 .venv/
+
+# J.P. Morgan's workbook is their publication, not ours to redistribute.
+# Download it yourself and drop it in data/raw/ to re-run build_data.py.
+data/raw/

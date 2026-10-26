@@ -39,8 +39,16 @@ J.P. Morgan Asset Management, *2026 Long-Term Capital Market Assumptions* (USD),
 ## Building
 
 ```
-python3 scripts/build_data.py   # xlsx -> data/processed/dataset.json
 python3 scripts/build_site.py   # site/template.html + dataset -> index.html
+```
+
+`data/processed/dataset.json` is checked in, so that is all you need. To
+regenerate it you also need J.P. Morgan's workbook, which is their publication
+and is not redistributed here &mdash; download it, save it as
+`data/raw/JP Morgan 2026 Capital Market Assumptions.xlsx`, then run:
+
+```
+python3 scripts/build_data.py   # xlsx -> data/processed/dataset.json
 ```
 
 `index.html` is standalone with no dependencies, ready for GitHub Pages.
